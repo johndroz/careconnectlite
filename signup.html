@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CareConnectLite</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+  <header>
+    <nav>
+        <a href="index.html">CareConnectLite</a>
+        <ul>
+            <li><a href="login.html">Already Have Account?</a></li>
+        </ul>
+    </nav>
+  </header>
+  <main class="login-section">
+    <h1>PATIENT SIGNUP</h1>
+    <form action="patient.html" method="POST">
+        <div>
+          <label for="username">Username</label>
+          <input type="text" id="username" name="username" required>
+        </div>
+        <div>
+          <label for="password">Password</label>
+          <input type="password" id="password" name="password" required>
+        </div>
+        <div class="left-align" style="color:grey">
+            <i>
+                Password must contain:
+                <ul>
+                    <li>Letters</li>
+                    <li>Numbers</li>
+                    <li>At least 8 characters</li>
+                    <li>Special character: `! @ # $ % ^ & * ( ) _ + - = { } | ; : ' " , . < > / ? ~ `</li>
+                </ul>
+            </i>
+        </div>
+        <div>
+            <label for="firstname">First Name</label>
+            <input type="text" id="firstname" name="firstname" required>
+        </div>
+        <div>
+            <label for="lastname">Last Name</label>
+            <input type="text" id="lastname" name="lastname" required>
+        </div>
+        <div>
+            <label for="email">Email</label>
+            <input type="email" id="email" name="email" required>
+        </div>
+        <button type="submit">Submit</button>
+      </form>
+
+  </main>
+
+  <!--FOOTER-->
+  <footer><p>&copy; 2026 CareConnectLite</p></footer>
+  <script src="script.js"></script>
+</body>
+</html>
