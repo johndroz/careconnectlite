@@ -143,5 +143,48 @@ nav {
 
 /*STAFF APPOINTMENT DETAILS*/
 .appointment-details {
-
+    max-width: 600px;
+    width: 90%;
+    margin: 80px auto;
+    padding: 32px;
+    text-align: center;
 }
+
+.appointment-details section {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    align-items: center;
+    border: #7f7f7f solid 1px;
+    border-radius: 10px;
+    padding: 20px;
+    margin: 10px;
+}
+
+.appointment-details-options {
+    display: grid;
+}
+
+.appointment-details-options button {
+    padding: 5px;
+    margin: 10px auto;
+    width: 100%;
+}
+
+dialog {
+    padding: 20px;
+    border: none;
+    border-radius: 8px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+    width: 300px;
+  }
+  
+  dialog::backdrop {
+    background-color: rgba(0, 0, 0, 0.5);
+  }
+  
+  .modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 15px;
+  }

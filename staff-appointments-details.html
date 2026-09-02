@@ -17,50 +17,50 @@
         </ul>
     </nav>
   </header>
-  <main class="appointments-section">
-    <h1>Staff Page</h1>
-    <h2 id="current-appointments-date">Current Appointments (09/01/2026)</h2>
-    
-    <!--APPOINTMENTS-->
-    <div>Appointments List (from database)</div>
+  <main class="appointment-details">
+    <h1>Appointment Details</h1>
+    <!--APPOINTMENT DETAILS-->
+    <div>Appointment Detail Information (from database)</div>
     <section>
         <div class="left-align">
-            <strong>Status</strong>
+            <strong>Booked</strong>
             <ul>
-                <li>Provider Name</li>
-                <li>Appointment Type</li>
-                <li>Time</li>
-                <li>Patient Name</li>
+                <li>Dr.Focaccia</li>
+                <li>Virtual</li>
+                <li>09/01/2026</li>
+                <li>10:00 AM</li>
+                <li>John Doe</li>
             </ul>
         </div>
-        <button>Appointment Details</button>
+        <div class="appointment-details-options">
+            <button onclick="alert('A Confirmation Request has been sent to the patient.')">Request Confirmation</button>
+            <button onclick="alert('An appointment intake form has been sent to the patient')">Send Intake Form</button>
+            <button id="updateStatus">Update Appointment Status</button>
+        </div>
     </section>
 
-    <section>
-        <div class="left-align">
-            <strong>Status</strong>
-            <ul>
-                <li>Provider Name</li>
-                <li>Appointment Type</li>
-                <li>Time</li>
-                <li>Patient Name</li>
-            </ul>
-        </div>
-        <button>Appointment Details</button>
-    </section>
-
-    <section>
-        <div class="left-align">
-            <strong>Status</strong>
-            <ul>
-                <li>Provider Name</li>
-                <li>Appointment Type</li>
-                <li>Time</li>
-                <li>Patient Name</li>
-            </ul>
-        </div>
-        <button>Appointment Details</button>
-    </section>
+    <!--MODAL FORM STATUS UPDATES-->
+    <dialog id="inputModal">
+        <form method="dialog" id="modalForm">
+          <h3>Update Appointment Status</h3>
+          
+          <label for="appointmentStatus">Appointment Status:</label>
+          <select type="text" id="appointmentStatus" name="appointmentStatus" required>
+            <option>Available</option>
+            <option>Booked</option>
+            <option>Confirmed</option>
+            <option>Checked in</option>
+            <option>Complete</option>
+            <option>Cancelled</option>
+            <option>No Show</option>
+          </select>
+          
+          <div class="modal-actions">
+            <button type="button" id="closeModalBtn">Cancel</button>
+            <button type="submit">Submit</button>
+          </div>
+        </form>
+      </dialog>
 
   </main>
 
@@ -69,6 +69,29 @@
     <p>&copy; 2026 CareConnectLite</p>
   </footer>
 
-  <script src="script.js"></script>
+  <script>
+    const modal = document.getElementById('inputModal');
+    const openBtn = document.getElementById('updateStatus');
+    const closeBtn = document.getElementById('closeModalBtn');
+    const form = document.getElementById('modalForm');
+    // Open the modal
+    openBtn.addEventListener('click', () => {
+    modal.showModal();
+    });
+
+    // Close the modal manually with cancel button
+    closeBtn.addEventListener('click', () => {
+    modal.close(); 
+    });
+
+    form.addEventListener('submit', (event) => {
+        //get the status value that I could use to make the update
+        const status = document.getElementById('appointmentStatus').value;
+        alert("Appointment Status update to: " + status);
+        
+        // Clear the input field for next time
+        form.reset();
+    });
+  </script>
 </body>
 </html>
