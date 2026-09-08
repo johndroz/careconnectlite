@@ -42,9 +42,14 @@ app.post('/login', async (req, res) => {
     const { email, password } = req.body;
     const user = findUserByEmail(email);
 
-    if (!user) return res.status(401).send('Invalid email or password.');
+
+    if (!user) {
+        return res.redirect("/login?error=user")
+    } 
     const passwordsMatch = await bcrypt.compare(password, user.passwordHash);
-    if (!passwordsMatch) return res.status(401).send('Invalid email or password.');
+    if (!passwordsMatch){
+        return res.redirect("/login?error=invalid")
+    }
 
     req.session.user = {
       userID: user.userID,
@@ -54,10 +59,10 @@ app.post('/login', async (req, res) => {
       role: user.role
     };
 
-    if (user.role === 'patient') return res.redirect('/patient/account');
-    if (user.role === 'staff') return res.redirect('/staff/account');
-    if (user.role === 'provider') return res.redirect('/provider/account');
-    if (user.role === 'clinic administrator') return res.redirect('/admin/account');
+    if (user.role === 'patient') return res.sendFile(path.join(__dirname, "pages/patients/patient-account.html"));
+    if (user.role === 'staff') return res.sendFile(path.join(__dirname, "pages/patients/patient-account.html"));
+    if (user.role === 'provider') return res.sendFile(path.join(__dirname, "pages/patients/patient-account.html"));
+    if (user.role === 'clinic administrator') return res.sendFile(path.join(__dirname, "pages/patients/patient-account.html"));
   
     res.redirect('/');
   });

@@ -114,6 +114,15 @@ nav {
     cursor: pointer;
   }
 
+  #login-error {
+    width: 100%;
+    padding: 10px;
+    margin-top: 10px;
+    font-size: 1.1rem;
+    border: none;
+    color: rgb(198, 0, 0);
+  }
+
 /* APPOINTMENTS */
 .appointments-section {
     max-width: 600px;

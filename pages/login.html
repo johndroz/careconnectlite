@@ -18,7 +18,7 @@
   </header>
   <main class="login-section">
     <h1>USER LOGIN</h1>
-    <form name="login" action="login" method="POST" netlify>
+    <form id="login-form" name="login" action="login" method="POST" netlify>
         <div>
           <label for="email">Email</label>
           <input type="email" id="email" name="email" required>
@@ -28,11 +28,19 @@
           <input type="password" id="password" name="password" required>
         </div>
         <button type="submit">Log In</button>
+        <div id="login-error"></div>
       </form>
 
   </main>
 
   <!--FOOTER-->
   <footer><p>&copy; 2026 CareConnectLite</p></footer>
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const error = params.get("error");
+    const errorField = document.getElementById("login-error");
+    if(error == "user") errorField.innerText = "No user associated with email."
+    if(error == "invalid") errorField.innerText = "Invalid email or password."
+  </script>
 </body>
 </html>
