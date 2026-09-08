@@ -15,7 +15,11 @@ app.use(session({
     saveUninitialized: false
   }));
 
-// routes for navigation - unprotected
+// ROUTES UNPROTECTED
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, "index.html"));
+});
+
 app.get('/login', (req, res) => {
     res.sendFile(path.join(__dirname, "login.html"));
 });
@@ -24,23 +28,51 @@ app.get('/signup', (req, res) => {
     res.sendFile(path.join(__dirname, "signup.html"));
 });
 
-// route for authetication 
-app.post('/login', (req, res) => {
-    //CODE FOR AUTHETICATION OF USER
+app.get('/about', (req, res) => {
+    res.sendFile(path.join(__dirname, "about.html"));
 });
 
-app.get('/register', (req, res) => {
-    //CODE FOR AUTHETICATION OF USER
+app.get('/service', (req, res) => {
+    res.sendFile(path.join(__dirname, "service.html"));
 });
 
-// routes for navigation - protected
-app.get('/staff', (req, res) => {
-    res.sendFile(path.join(__dirname, "staff.html"));
-});
+// ROUTE FOR LOGIN AUTHENTICATION
+app.post('/login', async (req, res) => {
+    const { email, password } = req.body;
+    const user = findUserByEmail(email);
 
-app.get('/patient', (req, res) => {
-    res.sendFile(path.join(__dirname, "patient.html"));
-});
+    if (!user) return res.status(401).send('Invalid email or password.');
+    const passwordsMatch = await bcrypt.compare(password, user.passwordHash);
+    if (!passwordsMatch) return res.status(401).send('Invalid email or password.');
+
+    req.session.user = {
+      userID: user.userID,
+      email: user.email,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      role: user.role
+    };
+
+    if (user.role === 'patient') return res.redirect('/patient/account');
+    if (user.role === 'staff') return res.redirect('/staff/account');
+    if (user.role === 'provider') return res.redirect('/provider/account');
+    if (user.role === 'clinic administrator') return res.redirect('/admin/account');
+  
+    res.redirect('/');
+  });
+
+
+//ROUTE FOR SIGNUP FORM
+app.post('/signup', async (req, res) => {
+    const { email, password, firstName, lastName, role } = req.body;
+    const existingUser = findUserByEmail(email);
+    if (existingUser) {
+      return res.status(400).send('An account with this email already exists.');
+    }
+    const passwordHash = await bcrypt.hash(password, 12);
+    createUser({email, passwordHash, firstName, lastName, role});
+    res.redirect('/pages/login.html');
+  });
 
 
 // set external port for express server
