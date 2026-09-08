@@ -6,6 +6,7 @@ const { createUser, findUserByEmail } = require('./models/userModel');
 
 
 //settings for the express server
+const app = express();
 require("dotenv").config();
 app.use(express.static("public"));
 app.use(express.urlencoded({ extended: true }));
