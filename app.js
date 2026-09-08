@@ -22,19 +22,19 @@ app.get('/', (req, res) => {
 });
 
 app.get('/login', (req, res) => {
-    res.sendFile(path.join(__dirname, "login.html"));
+    res.sendFile(path.join(__dirname, "pages/login.html"));
 });
 
 app.get('/signup', (req, res) => {
-    res.sendFile(path.join(__dirname, "signup.html"));
+    res.sendFile(path.join(__dirname, "pages/signup.html"));
 });
 
 app.get('/about', (req, res) => {
-    res.sendFile(path.join(__dirname, "about.html"));
+    res.sendFile(path.join(__dirname, "pages/about.html"));
 });
 
 app.get('/service', (req, res) => {
-    res.sendFile(path.join(__dirname, "service.html"));
+    res.sendFile(path.join(__dirname, "pages/service.html"));
 });
 
 // ROUTE FOR LOGIN AUTHENTICATION
