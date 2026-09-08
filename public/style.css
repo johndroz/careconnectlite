@@ -6,6 +6,10 @@
     text-align: center;
   }
 
+  .red-border {
+    border: 2px solid red;
+  }
+
 /* NAVIGATION */
 nav {
     display: flex;
@@ -114,13 +118,18 @@ nav {
     cursor: pointer;
   }
 
-  #login-error {
+  #login-error, #signup-error {
     width: 100%;
     padding: 10px;
     margin-top: 10px;
     font-size: 1.1rem;
     border: none;
     color: rgb(198, 0, 0);
+  }
+
+  #signup-confirmation {
+    color: green;
+    font-weight: bold;
   }
 
 /* APPOINTMENTS */

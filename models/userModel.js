@@ -1,11 +1,11 @@
 const db = require('../db/database');
 
-function createUser({ email, passwordHash, firstName, lastName, role }) {
+function createUser({ email, passwordHash, firstName, lastName, roleID }) {
   const stmt = db.prepare(`
-    INSERT INTO Users (email, passwordHash, firstName, lastName, role)
+    INSERT INTO Users (email, passwordHash, firstName, lastName, roleID)
     VALUES (?, ?, ?, ?, ?)
   `);
-  const result = stmt.run(email, passwordHash, firstName, lastName, role);
+  const result = stmt.run(email, passwordHash, firstName, lastName, roleID);
   return result.lastInsertRowid;
 }
 
@@ -19,7 +19,7 @@ function findUserByEmail(email) {
 
 function findUserById(userID) {
   const stmt = db.prepare(`
-    SELECT userID, email, firstName, lastName, role
+    SELECT userID, email, firstName, lastName, roleID
     FROM Users
     WHERE userID = ?
   `);

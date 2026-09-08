@@ -18,7 +18,7 @@
   </header>
   <main class="login-section">
     <h1>PATIENT SIGNUP</h1>
-    <form name="signup" action="signup" method="POST" netlify>
+    <form name="signup" action="/signup" method="POST" netlify>
         <div>
           <label for="email">Email</label>
           <input type="email" id="email" name="email" required>
@@ -40,18 +40,58 @@
         </div>
         <div>
             <label for="firstname">First Name</label>
-            <input type="text" id="firstname" name="firstname" required>
+            <input type="text" id="firstname" name="firstName" required>
         </div>
         <div>
             <label for="lastname">Last Name</label>
-            <input type="text" id="lastname" name="lastname" required>
+            <input type="text" id="lastname" name="lastName" required>
         </div>
         <button type="submit">Submit</button>
+        <div id="signup-error"></div>
       </form>
 
   </main>
 
   <!--FOOTER-->
   <footer><p>&copy; 2026 CareConnectLite</p></footer>
+  <script>
+    //display signup errors
+    const params = new URLSearchParams(window.location.search);
+    const error = params.get("error");
+    const errorField = document.getElementById("signup-error");
+    if(error == "user") {
+      errorField.innerText = "This email is already being used for an existing account."
+      errorField.classList.add("red-border");
+    }
+
+    //Password validation
+    const passwordField = document.getElementById("password");
+
+    function validatePass(text){
+      let errorText = "";
+      if(text.length < 8) {
+          errorText += "At least 8 characters required for password.\n"
+        }
+        if(!/[a-z]/i.test(text) || !/[0-9]/.test(text)){
+          errorText += "Both letters and numbers must be included in password.\n"
+        }
+        if(!/[`!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?~]/.test(text)){
+          errorText += "Special character required in password.\n"
+        }
+        errorField.innerText = errorText;
+        if(!error && errorText != "" && !passwordField.classList.contains("red-border")){
+          passwordField.classList.add("red-border");
+        } else passwordField.classList.remove("red-border");
+    }
+
+    passwordField.addEventListener("blur", e =>{
+      validatePass(passwordField.value);
+
+      passwordField.addEventListener("keyup", event=>{
+        let pass = passwordField.value;
+        validatePass(pass);
+      });
+    });
+  </script>
 </body>
 </html>

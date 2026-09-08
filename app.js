@@ -41,8 +41,7 @@ app.get('/service', (req, res) => {
 app.post('/login', async (req, res) => {
     const { email, password } = req.body;
     const user = findUserByEmail(email);
-
-
+    //send error as query parameters for failed logins to display to user
     if (!user) {
         return res.redirect("/login?error=user")
     } 
@@ -50,7 +49,7 @@ app.post('/login', async (req, res) => {
     if (!passwordsMatch){
         return res.redirect("/login?error=invalid")
     }
-
+    //create session for successful login
     req.session.user = {
       userID: user.userID,
       email: user.email,
@@ -58,26 +57,22 @@ app.post('/login', async (req, res) => {
       lastName: user.lastName,
       role: user.role
     };
-
+    //redirect user based on role
     if (user.role === 'patient') return res.sendFile(path.join(__dirname, "pages/patients/patient-account.html"));
-    if (user.role === 'staff') return res.sendFile(path.join(__dirname, "pages/patients/patient-account.html"));
-    if (user.role === 'provider') return res.sendFile(path.join(__dirname, "pages/patients/patient-account.html"));
-    if (user.role === 'clinic administrator') return res.sendFile(path.join(__dirname, "pages/patients/patient-account.html"));
-  
-    res.redirect('/');
+    if (user.role === 'staff') return res.sendFile(path.join(__dirname, "pages/staff/staff-account.html"));
   });
 
 
 //ROUTE FOR SIGNUP FORM
 app.post('/signup', async (req, res) => {
-    const { email, password, firstName, lastName, role } = req.body;
-    const existingUser = findUserByEmail(email);
+    const { email, password, firstName, lastName} = req.body;
+    const existingUser = await findUserByEmail(email);
     if (existingUser) {
-      return res.status(400).send('An account with this email already exists.');
+      return res.redirect("/signup?error=user")
     }
     const passwordHash = await bcrypt.hash(password, 12);
-    createUser({email, passwordHash, firstName, lastName, role});
-    res.redirect('/pages/login.html');
+    await createUser({email, passwordHash, firstName, lastName, roleID:1});
+    res.redirect('/login?signup=confirmed');
   });
 
 

@@ -28,7 +28,13 @@
           <input type="password" id="password" name="password" required>
         </div>
         <button type="submit">Log In</button>
+        <div id="signup-confirmation"></div>
         <div id="login-error"></div>
+        <!--
+        LOGIN CREDENTIALS FOR TESTING
+        email: test@example.com
+        pass: test123!
+        -->
       </form>
 
   </main>
@@ -39,8 +45,11 @@
     const params = new URLSearchParams(window.location.search);
     const error = params.get("error");
     const errorField = document.getElementById("login-error");
+    const confirm = params.get("signup");
+    const confirmation = document.getElementById("signup-confirmation");
     if(error == "user") errorField.innerText = "No user associated with email."
     if(error == "invalid") errorField.innerText = "Invalid email or password."
+    if(confirm == "confirmed") confirmation.innerText = "Signup was Successful."
   </script>
 </body>
 </html>
