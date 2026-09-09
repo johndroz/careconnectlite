@@ -3,6 +3,9 @@ const session = require('express-session');
 const bcrypt = require('bcrypt');
 const path = require('path');
 const { createUser, findUserByEmail } = require('./models/userModel');
+const findRole = require('./models/roleModel');
+const requireAuth = require('./middleware/requireAuth');
+const requireRole = require('./middleware/requireRole');
 
 
 //settings for the express server
@@ -37,6 +40,15 @@ app.get('/service', (req, res) => {
     res.sendFile(path.join(__dirname, "pages/service.html"));
 });
 
+//LOGGING OUT
+app.post("/logout", (req, res) => {
+    req.session.destroy(err => {
+      if (err) return res.status(500).send("Could not log out");
+      res.clearCookie("connect.sid");
+      res.redirect("/");
+    });
+  });
+
 // ROUTE FOR LOGIN AUTHENTICATION
 app.post('/login', async (req, res) => {
     const { email, password } = req.body;
@@ -45,6 +57,9 @@ app.post('/login', async (req, res) => {
     if (!user) {
         return res.redirect("/login?error=user")
     } 
+    //get roleName from roleID
+    let role = findRole(user.roleID);
+
     const passwordsMatch = await bcrypt.compare(password, user.passwordHash);
     if (!passwordsMatch){
         return res.redirect("/login?error=invalid")
@@ -55,13 +70,13 @@ app.post('/login', async (req, res) => {
       email: user.email,
       firstName: user.firstName,
       lastName: user.lastName,
-      role: user.role
+      role: role
     };
     //redirect user based on role
-    if (user.role === 'patient') return res.sendFile(path.join(__dirname, "pages/patients/patient-account.html"));
-    if (user.role === 'staff') return res.sendFile(path.join(__dirname, "pages/staff/staff-account.html"));
+    if (role === 'Patient') return res.sendFile(path.join(__dirname, "pages/patients/patient-account.html"));
+    if (role === 'Staff') return res.sendFile(path.join(__dirname, "pages/staff/staff-account.html"));
+    res.redirect("/")
   });
-
 
 //ROUTE FOR SIGNUP FORM
 app.post('/signup', async (req, res) => {
@@ -74,6 +89,13 @@ app.post('/signup', async (req, res) => {
     await createUser({email, passwordHash, firstName, lastName, roleID:1});
     res.redirect('/login?signup=confirmed');
   });
+
+//ROUTES PROTECTED
+//PATIENT ROUTES
+app.use("/patients", requireAuth);
+
+//STAFF ROUTES
+app.use("/staff", requireAuth, requireRole("Staff", "Provider", "Clinic Administrator"));
 
 
 // set external port for express server

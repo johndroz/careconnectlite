@@ -41,6 +41,7 @@
 
   <!--FOOTER-->
   <footer><p>&copy; 2026 CareConnectLite</p></footer>
+  
   <script>
     const params = new URLSearchParams(window.location.search);
     const error = params.get("error");
@@ -49,6 +50,7 @@
     const confirmation = document.getElementById("signup-confirmation");
     if(error == "user") errorField.innerText = "No user associated with email."
     if(error == "invalid") errorField.innerText = "Invalid email or password."
+    if(error == "auth") errorField.innerText = "Not Authorized. Please log in."
     if(confirm == "confirmed") confirmation.innerText = "Signup was Successful."
   </script>
 </body>

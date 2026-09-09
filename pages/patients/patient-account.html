@@ -12,15 +12,43 @@
     <nav>
         <a href="index.html">CareConnectLite</a>
         <ul>
+          <li><a id="logout">Log Out</a></li>
         </ul>
     </nav>
   </header>
   <main>
     <h1>Still under construction</h1>
 
+
+    <!--MODAL FORM FOR LOGOUT-->
+    <dialog id="inputModal">
+      <form action="/logout" method="POST" id="modalForm">
+        <h3>Are You Sure You Want Log Out?</h3>
+        <div class="modal-actions">
+          <button type="button" id="closeModalBtn">Cancel</button>
+          <button type="submit">Yes, Log out</button>
+        </div>
+      </form>
+    </dialog>
+
   </main>
 
   <!--FOOTER-->
   <footer><p>&copy; 2026 CareConnectLite</p></footer>
+
+  <script>
+    //MODAL FORM FOR LOG OUT
+    const modal = document.getElementById('inputModal');
+    const logoutBtn = document.getElementById('logout');
+    const closeBtn = document.getElementById('closeModalBtn');
+    // Open the modal
+    logoutBtn.addEventListener('click', () => {
+    modal.showModal();
+    });
+    // Close the modal manually with cancel button
+    closeBtn.addEventListener('click', () => {
+    modal.close(); 
+    });
+  </script>
 </body>
 </html>
