@@ -125,6 +125,60 @@ app.get("/patients/appointments", (req, res)=>{
 
 //STAFF ROUTES
 app.use("/staff", requireAuth, requireRole("Staff", "Provider", "Clinic Administrator"));
+app.get("/staff/account", (req, res)=>{
+    //get appointments from today
+    const today = new Date().toISOString().split('T')[0];
+    const appointments = appointmentModel.findAppointmentsByDate(today);
+    appointments.forEach(appointment => {
+        let currentStatus = appointmentStatusModel.findCurrentStatusByAppointmentId(appointment.appointmentID);
+        appointment.currentStatus = currentStatus.status;
+    });
+    appointments.reverse();
+    const user = userModel.findUserById(req.session.user.userID);
+    res.json({
+        success: true,
+        appointments,
+        user
+    });
+});
+
+app.get("/staff/appointments", (req, res) =>{
+    res.sendFile(path.join(__dirname, "pages/staff/staff-appointments.html"));
+});
+
+app.get("/staff/appointments/search", (req, res) =>{
+    const appointments = appointmentModel.findAppointments();
+    appointments.forEach(appointment => {
+        const currentStatus = appointmentStatusModel.findCurrentStatusByAppointmentId(appointment.appointmentID);
+        const patient = userModel.findUserById(appointment.patientID);
+        const provider = userModel.findUserById(appointment.providerID);
+        const [date, time] = appointment.datetime.split(' ');
+        appointment.currentStatus = currentStatus.status;
+        if(patient){
+            appointment.patientFirstName = `${patient.firstName}`;
+            appointment.patientLastName = `${patient.lastName}`;
+        } else {
+            appointment.patientFirstName = "Not Booked";
+            appointment.patientLastName = "";
+        }
+        if(provider){
+            appointment.providerFirstName = `${provider.firstName}`;
+            appointment.providerLastName = `${provider.lastName}`;
+        } else {
+            appointment.providerFirstName = "Not Assigned";
+            appointment.providerLastName = "";
+        }
+        appointment.date = date;
+        appointment.time = time;
+    });
+    appointments.reverse();
+    const user = userModel.findUserById(req.session.user.userID);
+    res.json({
+        success: true,
+        appointments,
+        user
+    });
+});
 
 
 // set external port for express server

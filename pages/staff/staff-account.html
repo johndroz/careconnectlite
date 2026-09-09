@@ -4,66 +4,36 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>CareConnectLite</title>
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="/style.css">
 </head>
 
 <body>
   <header>
     <nav>
-        <a href="index.html">CareConnectLite</a>
+        <a href="/">CareConnectLite</a>
         <ul>
-            <li><a href="staff-appointments">All Appointments</a></li>
-            <li><a href="logout">Log Out</a></li>
+            <li><a href="/staff/appointments">All Appointments</a></li>
+            <li><a id="logout">Log Out</a></li>
         </ul>
     </nav>
   </header>
   <main class="appointments-section">
-    <h1>Staff Page</h1>
-    <h2 id="current-appointments-date">Current Appointments (09/01/2026)</h2>
+    <h1 id="greeting"></h1>
+    <h2 id="current-appointments-date"></h2>
     
     <!--APPOINTMENTS-->
-    <div>Appointments List (from database)</div>
-    <section>
-        <div class="left-align">
-            <strong>Status</strong>
-            <ul>
-                <li>Provider Name</li>
-                <li>Appointment Type</li>
-                <li>Date</li>
-                <li>Time</li>
-                <li>Patient Name</li>
-            </ul>
-        </div>
-        <button onclick="window.location.href='staff-appointments-details.html'">Appointment Details</button>
-    </section>
+    <div id="current-appointments"></div>
 
-    <section>
-        <div class="left-align">
-            <strong>Status</strong>
-            <ul>
-                <li>Provider Name</li>
-                <li>Appointment Type</li>
-                <li>Date</li>
-                <li>Time</li>
-                <li>Patient Name</li>
-            </ul>
+    <!--MODAL FORM FOR LOGOUT-->
+    <dialog id="inputModal">
+      <form action="/logout" method="POST" id="modalForm">
+        <h3>Are You Sure You Want Log Out?</h3>
+        <div class="modal-actions">
+          <button type="button" id="closeModalBtn">Cancel</button>
+          <button type="submit">Yes, Log out</button>
         </div>
-        <button onclick="window.location.href='staff-appointments-details.html'">Appointment Details</button>
-    </section>
-
-    <section>
-        <div class="left-align">
-            <strong>Status</strong>
-            <ul>
-                <li>Provider Name</li>
-                <li>Appointment Type</li>
-                <li>Date</li>
-                <li>Time</li>
-                <li>Patient Name</li>
-            </ul>
-        </div>
-        <button onclick="window.location.href='staff-appointments-details.html'">Appointment Details</button>
-    </section>
+      </form>
+    </dialog>
 
   </main>
 
@@ -71,5 +41,64 @@
   <footer>
     <p>&copy; 2026 CareConnectLite</p>
   </footer>
+  <script>
+    //MODAL FORM FOR LOG OUT
+    const modal = document.getElementById('inputModal');
+    const logoutBtn = document.getElementById('logout');
+    const closeBtn = document.getElementById('closeModalBtn');
+    // Open the modal
+    logoutBtn.addEventListener('click', () => {
+    modal.showModal();
+    });
+    // Close the modal manually with cancel button
+    closeBtn.addEventListener('click', () => {
+    modal.close(); 
+    });
+
+
+    //get appointment data
+    async function loadCurrentAppointments(){
+      const res = await fetch("/staff/account");
+      const result = await res.json();
+      const greeting = document.getElementById("greeting");
+      const currentAppointments = document.getElementById("current-appointments")
+      const currentAppointmentsDate = document.getElementById("current-appointments-date");
+
+      //Retrieve successfully logged in patient info
+      if(result.success){
+        const user = result.user;
+        greeting.innerText = `Staff Member: ${user.firstName} ${user.lastName}`
+        currentAppointmentsDate.innerText = `Viewing Current Appointments (${new Date().toISOString().split('T')[0]})`;
+        const appointments = result.appointments;
+        //handle no appointments
+        if (!appointments || appointments.length === 0) {
+            currentAppointments.innerHTML = `
+            <p>No Appointments Currently.</p>
+            <a href="/staff/appointments">Search All Appointments</a>
+          `;
+          return;
+        }
+        //handle a list of appointments
+        currentAppointments.innerHTML = appointments.map(appt => {
+            const [date, time] = appt.datetime.split(' ');
+            return `
+          <section class="appointment-card">
+            <div>
+                <strong>${appt.currentStatus}</strong>
+                <ul class="left-align">
+                    <li>Date: ${date}</li>
+                    <li>Time: ${time}</li>
+                    <li>Type: ${appt.appointmentType || 'Not selected yet'}</li>
+                </ul>
+            </div>
+            <button onclick="window.location.href='/staff/appointments/details?ID=${appt.appointmentID}'">Appointment Details</button>
+          </section>
+        `}).join('');
+
+      }
+    }
+
+    loadCurrentAppointments();
+  </script>
 </body>
 </html>

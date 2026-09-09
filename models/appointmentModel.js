@@ -36,9 +36,28 @@ function findAppointmentsByPatient(patientID) {
     return stmt.all(providerID);
   }
 
+  function findAppointmentsByDate(date){
+    const stmt = db.prepare(`
+      SELECT * 
+      FROM Appointments
+      WHERE date(datetime) = ?
+    `);
+    return stmt.all(date);
+  }
+
+  function findAppointments(){
+    const stmt = db.prepare(`
+      SELECT * 
+      FROM Appointments
+    `);
+    return stmt.all();
+  }
+
 module.exports = {
     createAppointment,
     findAppointmentsById,
     findAppointmentsByPatient,
-    findAppointmentsByProvider
+    findAppointmentsByProvider,
+    findAppointmentsByDate,
+    findAppointments
 };
