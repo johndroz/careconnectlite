@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>CareConnectLite</title>
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="/style.css">
 </head>
 
 <body>
@@ -17,8 +17,9 @@
     </nav>
   </header>
   <main>
-    <h1>Still under construction</h1>
-
+    <h3 id="greeting">Hello, </h3>
+    <div id="my-appointments" class="appointments-section">
+    </div>
 
     <!--MODAL FORM FOR LOGOUT-->
     <dialog id="inputModal">
@@ -49,6 +50,41 @@
     closeBtn.addEventListener('click', () => {
     modal.close(); 
     });
+
+    //GET APPOINTMENTS FOR SPECIFIC PATIENT
+    async function loadPatient(){
+      const res = await fetch("/patients/appointments");
+      const result = await res.json();
+      const greeting = document.getElementById("greeting");
+      const myAppointments = document.getElementById("my-appointments")
+
+      //Retrieve successfully logged in patient info
+      if(result.success){
+        const user = result.user;
+        greeting.innerText = `Hello, ${user.firstName} ${user.lastName}`
+
+        const appointments = result.appointments;
+        //handle no appointments
+        if (!appointments || appointments.length === 0) {
+          myAppointments.innerHTML = `
+            <p>No Appointments Currently.</p>
+            <a href="/patients/schedule">Schedule an appointment</a>
+          `;
+          return;
+        }
+        //handle a list of appointments
+        myAppointments.innerHTML = appointments.map(appt => `
+          <section class="appointment-card">
+            <p><strong>Status:</strong> ${appt.currentStatus}</p>
+            <p><strong>Date/Time:</strong> ${appt.datetime}</p>
+            <p><strong>Type:</strong> ${appt.appointmentType || 'Not selected yet'}</p>
+          </section>
+        `).join('');
+
+      }
+    }
+
+    loadPatient();
   </script>
 </body>
 </html>

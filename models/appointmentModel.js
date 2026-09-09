@@ -9,13 +9,13 @@ function createAppointment({datetime}) {
   return result.lastInsertRowid;
 }
 
-function findAppointmentById(appointmentID) {
+function findAppointmentsById(appointmentID) {
   const stmt = db.prepare(`
     SELECT *
     FROM Appointments
     WHERE appointmentID = ?
   `);
-  return stmt.get(appointmentID);
+  return stmt.all(appointmentID);
 }
 
 function findAppointmentsByPatient(patientID) {
@@ -24,7 +24,7 @@ function findAppointmentsByPatient(patientID) {
       FROM Appointments
       WHERE patientID = ?
     `);
-    return stmt.get(patientID);
+    return stmt.all(patientID);
   }
 
   function findAppointmentsByProvider(providerID) {
@@ -33,12 +33,12 @@ function findAppointmentsByPatient(patientID) {
       FROM Appointments
       WHERE providerID = ?
     `);
-    return stmt.get(providerID);
+    return stmt.all(providerID);
   }
 
 module.exports = {
     createAppointment,
-    findAppointmentById,
+    findAppointmentsById,
     findAppointmentsByPatient,
     findAppointmentsByProvider
 };

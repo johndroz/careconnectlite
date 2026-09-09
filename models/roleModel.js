@@ -1,3 +1,5 @@
+const db = require('../db/database');
+
 function findRole(roleID) {
     const stmt = db.prepare(`
       SELECT roleName

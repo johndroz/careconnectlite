@@ -2,7 +2,7 @@
     text-align: start;
   }
 
-  h1, h2 {
+  h1, h2, h3 {
     text-align: center;
   }
 
@@ -130,6 +130,10 @@ nav {
   #signup-confirmation {
     color: green;
     font-weight: bold;
+  }
+
+  #logout {
+    cursor: pointer;
   }
 
 /* APPOINTMENTS */
