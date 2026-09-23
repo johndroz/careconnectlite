@@ -89,7 +89,7 @@ app.post('/login', async (req, res) => {
     };
     //redirect user based on role
     if (role.roleName === 'Patient') return res.sendFile(path.join(__dirname, "pages/patients/patient-account.html"));
-    else if (role.roleName === 'Staff') return res.sendFile(path.join(__dirname, "pages/staff/staff-account.html"));
+    else if (role.roleName === 'Staff') return res.sendFile(path.join(__dirname, "pages/staff/staff-appointments-today.html"));
     else res.redirect("/")
   });
 
@@ -110,10 +110,12 @@ app.post('/signup', async (req, res) => {
 app.use("/patients", requireAuth);
 app.get("/patients/appointments", (req, res)=>{
     const appointments = appointmentModel.findAppointmentsByPatient(req.session.user.userID);
+    //add current status to each appointment
     appointments.forEach(appointment => {
         let currentStatus = appointmentStatusModel.findCurrentStatusByAppointmentId(appointment.appointmentID);
         appointment.currentStatus = currentStatus.status;
     });
+    //reverse so recent appointments display first
     appointments.reverse();
     const user = userModel.findUserById(req.session.user.userID);
     res.json({
@@ -125,14 +127,19 @@ app.get("/patients/appointments", (req, res)=>{
 
 //STAFF ROUTES
 app.use("/staff", requireAuth, requireRole("Staff", "Provider", "Clinic Administrator"));
-app.get("/staff/account", (req, res)=>{
+app.get("/staff/daily", (req, res) =>{
+    res.sendFile(path.join(__dirname, "pages/staff/staff-appointments-today.html"));
+});
+app.get("/staff/appointments/today", (req, res)=>{
     //get appointments from today
-    const today = new Date().toISOString().split('T')[0];
+    const today = new Date().toLocaleDateString('en-CA');
     const appointments = appointmentModel.findAppointmentsByDate(today);
+    //add current status to each appointment
     appointments.forEach(appointment => {
         let currentStatus = appointmentStatusModel.findCurrentStatusByAppointmentId(appointment.appointmentID);
         appointment.currentStatus = currentStatus.status;
     });
+    //reverse so recent appointments display first
     appointments.reverse();
     const user = userModel.findUserById(req.session.user.userID);
     res.json({
@@ -180,6 +187,41 @@ app.get("/staff/appointments/search", (req, res) =>{
     });
 });
 
+app.get("/staff/appointments/details", (req, res) =>{
+    res.sendFile(path.join(__dirname, "pages/staff/staff-appointments-details.html"));
+});
+app.get("/staff/appointments/details/search", (req, res) =>{
+    const appointmentID = req.query.ID
+    const appointment = appointmentModel.findAppointmentsById(appointmentID);
+    appointment.currentStatus = appointmentStatusModel.findCurrentStatusByAppointmentId(appointmentID);
+    const patient = userModel.findUserById(appointment.patientID);
+        const provider = userModel.findUserById(appointment.providerID);
+        const [date, time] = appointment.datetime.split(' ');
+        appointment.currentStatus = currentStatus.status;
+        if(patient){
+            appointment.patientFirstName = `${patient.firstName}`;
+            appointment.patientLastName = `${patient.lastName}`;
+        } else {
+            appointment.patientFirstName = "Not Booked";
+            appointment.patientLastName = "";
+        }
+        if(provider){
+            appointment.providerFirstName = `${provider.firstName}`;
+            appointment.providerLastName = `${provider.lastName}`;
+        } else {
+            appointment.providerFirstName = "Not Assigned";
+            appointment.providerLastName = "";
+        }
+        appointment.date = date;
+        appointment.time = time;
+        const user = userModel.findUserById(req.session.user.userID);
+        res.json({
+            success: true,
+            appointment,
+            user
+        });
+
+});
 
 // set external port for express server
 app.listen(3000, () => {

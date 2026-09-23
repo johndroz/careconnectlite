@@ -58,7 +58,7 @@
 
     //get appointment data
     async function loadCurrentAppointments(){
-      const res = await fetch("/staff/account");
+      const res = await fetch("/staff/appointments/today");
       const result = await res.json();
       const greeting = document.getElementById("greeting");
       const currentAppointments = document.getElementById("current-appointments")
@@ -68,7 +68,7 @@
       if(result.success){
         const user = result.user;
         greeting.innerText = `Staff Member: ${user.firstName} ${user.lastName}`
-        currentAppointmentsDate.innerText = `Viewing Current Appointments (${new Date().toISOString().split('T')[0]})`;
+        currentAppointmentsDate.innerText = `Viewing Current Appointments (${new Date().toLocaleDateString('en-CA')})`;
         const appointments = result.appointments;
         //handle no appointments
         if (!appointments || appointments.length === 0) {

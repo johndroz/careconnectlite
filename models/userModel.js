@@ -26,6 +26,15 @@ function findUserById(userID) {
   return stmt.get(userID);
 }
 
+function findUsersByRole(roleName) {
+  const stmt = db.prepare(`
+    SELECT userID, email, firstName, lastName, roleID, roleName
+    FROM Users JOIN Roles ON Users.roleID = Roles.roleID
+    WHERE userID = ?
+  `);
+  return stmt.all(roleName);
+}
+
 module.exports = {
   createUser,
   findUserByEmail,
