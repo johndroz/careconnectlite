@@ -15,6 +15,7 @@ const app = express();
 require("dotenv").config();
 app.use(express.static("public"));
 app.use(express.urlencoded({ extended: true }));
+app.use(express.json());
 app.use(session({
     secret: process.env.SESSION_SECRET,
     resave: false,
@@ -31,7 +32,7 @@ app.get('/login', (req, res) => {
     if(req.session && req.session.user){
         const role = req.session.user.role;
         if(role == "Patient") return res.sendFile(path.join(__dirname, "pages/patients/patient-account.html"));
-        else if (role === 'Staff') return res.sendFile(path.join(__dirname, "pages/staff/staff-account.html"));
+        else if (role === 'Staff') return res.sendFile(path.join(__dirname, "pages/staff/staff-appointments-today.html"));
     }
     
     res.sendFile(path.join(__dirname, "pages/login.html"));
@@ -42,7 +43,7 @@ app.get('/signup', (req, res) => {
     if(req.session && req.session.user){
         const role = req.session.user.role;
         if(role == "Patient") return res.sendFile(path.join(__dirname, "pages/patients/patient-account.html"));
-        else if (role === 'Staff') return res.sendFile(path.join(__dirname, "pages/staff/staff-account.html"));
+        else if (role === 'Staff') return res.sendFile(path.join(__dirname, "pages/staff/staff-appointments-today.html"));
     }
     res.sendFile(path.join(__dirname, "pages/signup.html"));
 });
@@ -108,6 +109,9 @@ app.post('/signup', async (req, res) => {
 //ROUTES PROTECTED
 //PATIENT ROUTES
 app.use("/patients", requireAuth);
+app.get("/patients/account", (req, res) =>{
+    res.sendFile(path.join(__dirname, "pages/patients/patient-account.html"));
+});
 app.get("/patients/appointments", (req, res)=>{
     const appointments = appointmentModel.findAppointmentsByPatient(req.session.user.userID);
     //add current status to each appointment
@@ -124,6 +128,72 @@ app.get("/patients/appointments", (req, res)=>{
         user
     });
 });
+app.get("/patients/appointments/details", (req, res) =>{
+    res.sendFile(path.join(__dirname, "pages/patients/patients-appointments-details.html"));
+});
+app.get("/patients/appointments/details/search", (req, res) =>{
+    const appointmentID = req.query.ID
+    const appointment = appointmentModel.findAppointmentsById(appointmentID);
+    const currentStatus = appointmentStatusModel.findCurrentStatusByAppointmentId(appointmentID);
+    appointment.currentStatus = currentStatus.status;
+    const patient = userModel.findUserById(appointment.patientID);
+        const provider = userModel.findUserById(appointment.providerID);
+        const [date, time] = appointment.datetime.split(' ');
+        appointment.currentStatus = currentStatus.status;
+        if(patient){
+            appointment.patientFirstName = `${patient.firstName}`;
+            appointment.patientLastName = `${patient.lastName}`;
+        } else {
+            appointment.patientFirstName = "Not Booked";
+            appointment.patientLastName = "";
+        }
+        if(provider){
+            appointment.providerFirstName = `${provider.firstName}`;
+            appointment.providerLastName = `${provider.lastName}`;
+        } else {
+            appointment.providerFirstName = "Not Assigned";
+            appointment.providerLastName = "";
+        }
+        appointment.date = date;
+        appointment.time = time;
+        const user = userModel.findUserById(req.session.user.userID);
+        res.json({
+            success: true,
+            appointment,
+            user
+        });
+
+});
+app.post("/patients/appointments/confirmation", (req, res) =>{
+    const appointmentID = req.body.ID;
+    const appointment = appointmentModel.findAppointmentsById(appointmentID);
+    const data = {success: false, message: "Unable to confirm"};
+
+    //get current date in format (yyyy-mm-dd hh:mm:ss)
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    const seconds = String(now.getSeconds()).padStart(2, '0');
+    const formattedDate = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+
+    const currentStatus = appointmentStatusModel.findCurrentStatusByAppointmentId(appointmentID);
+    appointment.currentStatus = currentStatus.status;
+    if(appointment.currentStatus == "Booked"){
+        try{
+            const confirmedStatus = appointmentStatusModel.createAppointmentStatus({appointmentID: appointmentID, status: "Confirmed", datetime: formattedDate});
+            if(confirmedStatus){
+                data.success = true;
+                data.message = "Appointment has been confirmed."
+            }
+        } catch(err){
+            console.log(err)
+        }
+    }
+    res.json(data);
+})
 
 //STAFF ROUTES
 app.use("/staff", requireAuth, requireRole("Staff", "Provider", "Clinic Administrator"));
@@ -193,7 +263,8 @@ app.get("/staff/appointments/details", (req, res) =>{
 app.get("/staff/appointments/details/search", (req, res) =>{
     const appointmentID = req.query.ID
     const appointment = appointmentModel.findAppointmentsById(appointmentID);
-    appointment.currentStatus = appointmentStatusModel.findCurrentStatusByAppointmentId(appointmentID);
+    const currentStatus = appointmentStatusModel.findCurrentStatusByAppointmentId(appointmentID);
+    appointment.currentStatus = currentStatus.status;
     const patient = userModel.findUserById(appointment.patientID);
         const provider = userModel.findUserById(appointment.providerID);
         const [date, time] = appointment.datetime.split(' ');
@@ -221,6 +292,53 @@ app.get("/staff/appointments/details/search", (req, res) =>{
             user
         });
 
+});
+
+app.post("/staff/appointments/requestConfirmation", (req, res) =>{
+    const appointmentID = req.body.ID;
+    const appointment = appointmentModel.findAppointmentsById(appointmentID);
+    const data = {success: false, message: "Unable to send confirmation"};
+    if(appointment.confirmationRequested == 0){
+        try{
+            const changes = appointmentModel.sendConfirmation(appointmentID);
+            if(changes > 0){
+                data.success = true;
+                data.message = "Confirmation request has been sent."
+            }
+        } catch(err){
+            console.log(err)
+        }
+        
+    }
+    res.json(data);
+});
+
+app.post("/staff/appointments/updateStatus", (req, res) =>{
+    data = {success: false, message: "Unable to update status."}
+    const statusForm = req.body;
+    const appointment = appointmentModel.findAppointmentsById(statusForm.ID);
+
+    //get current date in format (yyyy-mm-dd hh:mm:ss)
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    const seconds = String(now.getSeconds()).padStart(2, '0');
+    const formattedDate = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+
+    if(appointment){
+        try{
+            appointmentStatusModel.createAppointmentStatus({appointmentID: appointment.appointmentID, status: statusForm.appointmentStatus, datetime: formattedDate});
+            data.success = true;
+            data.message = "Appointment status has been successfully added."
+        }
+        catch(err){
+            console.log(err);
+        }
+    }
+    res.redirect(`/staff/appointments/details?ID=${appointment.appointmentID}&update=${data.success}`);
 });
 
 // set external port for express server

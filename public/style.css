@@ -163,6 +163,21 @@ nav {
     list-style: none;
 }
 
+.appointment-card-buttons {
+  display: grid;
+  align-content: start;
+}
+.appointment-card-buttons button {
+  height: 2rem;
+  margin: 5px 0;
+}
+.appointment-card-buttons div {
+  margin: 5px 0;
+  background-color: #dbe3f4;
+  height: 1.25rem;
+  align-self: start;
+}
+
 /*STAFF APPOINTMENT DETAILS*/
 .appointment-details {
     max-width: 600px;

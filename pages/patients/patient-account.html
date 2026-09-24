@@ -17,6 +17,8 @@
     </nav>
   </header>
   <main>
+    <div id="feedback"></div>
+
     <h3 id="greeting">Hello, </h3>
     <div id="my-appointments" class="appointments-section">
     </div>
@@ -38,6 +40,9 @@
   <footer><p>&copy; 2026 CareConnectLite</p></footer>
 
   <script>
+    //DIV FOR FEEDBACK FROM RESPONSES
+    const feedback = document.getElementById("feedback");
+
     //MODAL FORM FOR LOG OUT
     const modal = document.getElementById('inputModal');
     const logoutBtn = document.getElementById('logout');
@@ -50,6 +55,7 @@
     closeBtn.addEventListener('click', () => {
     modal.close(); 
     });
+
 
     //GET APPOINTMENTS FOR SPECIFIC PATIENT
     async function loadPatient(){
@@ -73,13 +79,36 @@
           return;
         }
         //handle a list of appointments
-        myAppointments.innerHTML = appointments.map(appt => `
-          <section class="appointment-card">
+        appointments.forEach(appt => {
+          const appointmentCard = document.createElement("section");
+          appointmentCard.classList.add("appointemnt-card");
+          appointmentCard.innerHTML = 
+          `<div class="left-align">
             <p><strong>Status:</strong> ${appt.currentStatus}</p>
             <p><strong>Date/Time:</strong> ${appt.datetime}</p>
             <p><strong>Type:</strong> ${appt.appointmentType || 'Not selected yet'}</p>
-          </section>
-        `).join('');
+          </div>
+          <div class="appointment-card-buttons">
+            <div id="confirm${appt.appointmentID}"></div>
+            <div id="intake${appt.appointmentID}"></div>
+            <button onclick="window.location.href='/patients/appointments/details?ID=${appt.appointmentID}'">
+                Appointment Details
+              </button>
+          </div>`
+
+          myAppointments.appendChild(appointmentCard);
+          //check intake and confirmation request status
+          const confirmBtn = document.getElementById(`confirm${appt.appointmentID}`);
+          const intakeBtn = document.getElementById(`intake${appt.appointmentID}`);
+          const confirmationRequested = appt.confirmationRequested;
+          const intakeSubmitted = appt.intakeSubmitted;
+          if(confirmationRequested == 0 || (confirmationRequested == 1 && appt.currentStatus != "Booked")) confirmBtn.innerText = "Not Confirmed"
+          if(appt.currentStatus == "Confirmed") confirmBtn.innerText = "Appointment Confirmed";
+          if(confirmationRequested == 1 && appt.currentStatus == "Booked") confirmBtn.innerText = "Confirmation Required"
+          if(intakeSubmitted == 1) intakeBtn.innerText = "Intake Submitted";
+          if(intakeSubmitted == 0) intakeBtn.innerText = "Intake not Completed"
+          if(intakeSubmitted == 0 && appt.currentStatus == "Confirmed") intakeBtn.innerText = "Intake Required";
+        });  
 
       }
     }
