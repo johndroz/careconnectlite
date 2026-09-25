@@ -12,13 +12,13 @@
     <nav>
         <a href="index.html">CareConnectLite</a>
         <ul>
-          <li><a href="/staff/daily">Today's Appointments</a></li>
-          <li><a href="/staff/appointments">All Appointments</a></li>
+          <li><a href="/providers/daily">Today's Appointments</a></li>
+          <li><a href="/providers/appointments">All Appointments</a></li>
             <li><a id="logout">Log Out</a></li>
         </ul>
     </nav>
   </header>
-  <h1>Staff: View Appointment Details</h1>
+  <h1>Provider: View Appointment Details</h1>
   <div id="feedback"></div>
 
   <!--APPOINTMENT DETAILS-->
@@ -26,8 +26,8 @@
     <div id="appointment-details"></div>
 
     <!--MODAL FORM STATUS UPDATES-->
-    <dialog id="inputModal">
-        <form action="/staff/appointments/updateStatus" method="POST" id="statusForm">
+    <dialog id="statusModal">
+        <form action="/providers/appointments/updateStatus" method="POST" id="statusForm">
           <h3>Update Appointment Status</h3>
           
           <label for="appointmentStatus">Appointment Status:</label>
@@ -48,6 +48,23 @@
           <input type="hidden" name="ID" id="statusAppointmentID">
         </form>
       </dialog>
+
+      <!--MODAL FORM PROVIDER UPDATES-->
+    <dialog id="assignModal">
+      <form action="/providers/appointments/assign" method="POST" id="assignForm">
+        <h3>Update Appointment Status</h3>
+        
+        <label for="assignedProvider">Appointment Status:</label>
+        <select type="text" id="assignedProvider" name="assignedProvider" required>
+        </select>
+        
+        <div class="modal-actions">
+          <button type="button" id="closeAssignModalBtn">Cancel</button>
+          <button type="submit">Submit</button>
+        </div>
+        <input type="hidden" name="ID" id="assignAppointmentID">
+      </form>
+    </dialog>
 
       <!--MODAL FORM FOR LOGOUT-->
       <dialog id="logoutModal">
@@ -94,7 +111,7 @@
     
     //SEND CONFIRMATION
     async function sendConfirmation(ID){
-      const res = await fetch("/staff/appointments/requestConfirmation", {
+      const res = await fetch("/providers/appointments/requestConfirmation", {
         method: "POST",
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({'ID': ID})
@@ -114,7 +131,7 @@
     const appointmentID = params.get("ID");
 
     async function loadAppointmentDetails(){
-      const res = await fetch(`/staff/appointments/details/search?ID=${appointmentID}`);
+      const res = await fetch(`/providers/appointments/details/search?ID=${appointmentID}`);
       const result = await res.json();
       const currentAppointment = document.getElementById("appointment-details")
       
@@ -122,15 +139,17 @@
       if(result.success){
         const user = result.user;
         const appointment = result.appointment;
+        const providers = result.providers;
         //handle no appointments
         if (!appointment || appointment.length === 0) {
             currentAppointment.innerHTML = `
             <p>No Appointment Details Found.</p>
-            <a href="/staff/appointments">Search All Appointments</a>
+            <a href="/providers/appointments">Search All Appointments</a>
           `;
           return;
         }
         //handle a list of appointments
+        const intakeID = appointment.intake ? appointment.intake.formID : "none"
         const [date, time] = appointment.datetime.split(' ');
         currentAppointment.innerHTML = `
             <section class="appointment-details-card">
@@ -147,15 +166,25 @@
               <div class="appointment-details-options">
                 <button id="confirmationRequest" onclick="sendConfirmation(${appointment.appointmentID})">Request Confirmation</button>
                 <button id="updateStatus">Update Appointment Status</button>
+                <button id="assignBtn">Assign Provider</button>
+                <button id="viewIntakeBtn" onclick="window.location.href='/providers/intake?ID=${intakeID}'">View Intake</button>
               </div>
             </section>
           `;
 
+        //check appointment information to enable options
         const confirmationBtn = document.getElementById('confirmationRequest');
         if(appointment.confirmationRequested == 1 || (appointment.confirmationRequested == 0 && appointment.currentStatus != "Booked")) confirmationBtn.disabled = true;
+        const viewIntakeBtn = document.getElementById("viewIntakeBtn");
+        if(appointment.intake == undefined){
+          viewIntakeBtn.disabled = true;
+          viewIntakeBtn.innerText = "Intake not Submitted";
+        }
+        const assignBtn = document.getElementById("assignBtn");
+        if(appointment.providerID) assignBtn.innerText = "Update Provider";
 
         //MODAL FOR STATUS UPDATE
-        const statusModal = document.getElementById('inputModal');
+        const statusModal = document.getElementById('statusModal');
         const openBtn = document.getElementById('updateStatus');
         const closeStatusBtn = document.getElementById('closeStatusModalBtn');
         const statusForm = document.getElementById('statusForm');
@@ -175,6 +204,36 @@
         });
 
         statusForm.addEventListener('submit', (event) => {
+            //get the status value that I could use to make the update
+            const status = document.getElementById('appointmentStatus').value;
+            alert("Appointment Status update to: " + status);
+        });
+
+        //MODAL FOR ASSIGNED PROVIDER UPDATE
+        const assignModal = document.getElementById('assignModal');
+        const closeAssignModalBtn = document.getElementById('closeStatusModalBtn');
+        const assignForm = document.getElementById('assignForm');
+        const assignAppointmentID = document.getElementById('assignAppointmentID');
+        
+        //Set appointment ID for status updates
+        assignAppointmentID.value = appointmentID;
+        //Add Provider list
+        const assignedProvider = document.getElementById("assignedProvider");
+        assignedProvider.innerHTML = providers.map(provider =>{
+          `<option value="${provider.userID}">${provider.firstName} ${provider.lastName}</option>`
+        }).join(" ");
+
+        // Open the modal
+        assignBtn.addEventListener('click', () => {
+          assignModal.showModal();
+        });
+
+        // Close the modal manually with cancel button
+        closeAssignModalBtn.addEventListener('click', () => {
+          assignModal.close(); 
+        });
+
+        assignForm.addEventListener('submit', (event) => {
             //get the status value that I could use to make the update
             const status = document.getElementById('appointmentStatus').value;
             alert("Appointment Status update to: " + status);

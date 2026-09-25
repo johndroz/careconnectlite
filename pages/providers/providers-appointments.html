@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CareConnectLite</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+
+<body>
+  <header>
+    <nav>
+        <a href="/">CareConnectLite</a>
+        <ul>
+            <li><a href="/providers/daily">Today's Appointments</a></li>
+            <li><a id="logout">Log Out</a></li>
+        </ul>
+    </nav>
+  </header>
+  <main class="appointments-section">
+    <h1 id="greeting"></h1>
+    <h2 id="current-appointments-date"></h2>
+
+    <!--SEARCH FORM-->
+    <form id="search-form" action="/providers/appointments" method="GET">
+      <label for="date">Date</label>
+      <input type="date" id="date" name="date">
+      <label for="time">Time</label>
+      <select id="time" name="time">
+        <option value="">Any time</option>
+        <option value="08:00">08:00</option>
+        <option value="08:30">08:30</option>
+        <option value="09:00">09:00</option>
+        <option value="09:30">09:30</option>
+        <option value="10:00">10:00</option>
+        <option value="10:30">10:30</option>
+        <option value="11:00">11:00</option>
+        <option value="11:30">11:30</option>
+        <option value="12:00">12:00</option>
+        <option value="12:30">12:30</option>
+        <option value="13:00">13:00</option>
+        <option value="13:30">13:30</option>
+        <option value="14:00">14:00</option>
+        <option value="14:30">14:30</option>
+        <option value="15:00">15:00</option>
+        <option value="15:30">15:30</option>
+        <option value="16:00">16:00</option>
+        <option value="16:30">16:30</option>
+        <option value="17:00">17:00</option>
+      </select>
+      <label for="patient">Patient</label>
+      <input type="text" id="patient" name="patient" placeholder="Patient name">
+      <label for="provider">Provider</label>
+      <input type="text" id="provider" name="provider" placeholder="Provider name">
+      <label for="appointmentID">Appointment ID</label>
+      <input type="number" id="appointmentID" name="appointmentID" placeholder="Appointment ID">
+      <label for="type">Type</label>
+      <select id="type" name="type">
+        <option value="">Any type</option>
+        <option value="Virtual">Virtual</option>
+        <option value="In-person">In-person</option>
+      </select>
+      <label for="status">Appointment Status</label>
+      <select id="status" name="status">
+        <option value="">Any status</option>
+        <option value="Available">Available</option>
+        <option value="Booked">Booked</option>
+        <option value="Confirmed">Confirmed</option>
+        <option value="Checked in">Checked in</option>
+        <option value="Cancelled">Cancelled</option>
+        <option value="No Show">No Show</option>
+        <option value="Completed">Completed</option>
+      </select>
+      <button type="submit">Search</button>
+      <a href="/providers/appointments">Clear Search</a>
+    </form>
+    
+    <!--APPOINTMENTS-->
+    <div id="current-appointments"></div>
+
+    <!--MODAL FORM FOR LOGOUT-->
+    <dialog id="inputModal">
+      <form action="/logout" method="POST" id="modalForm">
+        <h3>Are You Sure You Want Log Out?</h3>
+        <div class="modal-actions">
+          <button type="button" id="closeModalBtn">Cancel</button>
+          <button type="submit">Yes, Log out</button>
+        </div>
+      </form>
+    </dialog>
+
+  </main>
+
+  <!--FOOTER-->
+  <footer>
+    <p>&copy; 2026 CareConnectLite</p>
+  </footer>
+  <script>
+    //MODAL FORM FOR LOG OUT
+    const modal = document.getElementById('inputModal');
+    const logoutBtn = document.getElementById('logout');
+    const closeBtn = document.getElementById('closeModalBtn');
+    // Open the modal
+    logoutBtn.addEventListener('click', () => {
+    modal.showModal();
+    });
+    // Close the modal manually with cancel button
+    closeBtn.addEventListener('click', () => {
+    modal.close(); 
+    });
+
+
+    //get appointment data
+    async function loadAppointments(){
+      const res = await fetch("/providers/appointments/search");
+      const result = await res.json();
+      const greeting = document.getElementById("greeting");
+      const currentAppointments = document.getElementById("current-appointments")
+      const currentAppointmentsDate = document.getElementById("current-appointments-date");
+
+      //get search parameters
+      const params = new URLSearchParams(window.location.search);
+      const searchDate = params.get("date");
+      const searchTime = params.get("time");
+      const searchPatient = params.get("patient");
+      const searchProvider = params.get("provider");
+      const searchID = params.get("appointmentID");
+      const searchType = params.get("type");
+      const searchStatus = params.get("status");
+
+      //Retrieve successfully logged in patient info
+      if(result.success){
+        const user = result.user;
+        greeting.innerText = `Provider: ${user.firstName} ${user.lastName}`
+        currentAppointmentsDate.innerText = `Viewing All Appointments`;
+        const appointments = result.appointments;
+        //handle no appointments
+        if (!appointments || appointments.length === 0) {
+            currentAppointments.innerHTML = `
+            <p>No Appointments Currently.</p>
+            <a href="/providers/appointments">Search All Appointments</a>
+          `;
+          return;
+        }
+        //handle a list of appointments
+        currentAppointments.innerHTML = appointments.filter(appt => {
+          const [date, time] = appt.datetime.split(' ');
+          const patientName = `${appt.patientFirstName} ${appt.patientLastName}`.toLowerCase();
+          const providerName = `${appt.providerFirstName} ${appt.providerLastName}`.toLowerCase();
+
+          return (
+            params.size === 0 ||
+            (!searchDate || searchDate == date) &&
+            (!searchTime || `${searchTime}:00` == time) &&
+            (!searchPatient || patientName.includes(searchPatient.toLowerCase())) &&
+            (!searchProvider || providerName.includes(searchProvider.toLowerCase())) &&
+            (!searchID || searchID == appt.appointmentID) &&
+            (!searchType || searchType == appt.appointmentType) &&
+            (!searchStatus || searchStatus == appt.currentStatus)
+          );
+        }).map(appt => {
+          const [date, time] = appt.datetime.split(' ');
+
+          return `
+            <section class="appointment-card">
+              <div>
+                <strong>${appt.currentStatus}</strong>
+                <ul class="left-align">
+                  <li>Provider: ${appt.providerFirstName} ${appt.providerLastName}</li>
+                  <li>Date: ${date}</li>
+                  <li>Time: ${time}</li>
+                  <li>Type: ${appt.appointmentType || 'Not selected yet'}</li>
+                  <li>Patient: ${appt.patientFirstName} ${appt.patientLastName}</li>
+                </ul>
+              </div>
+              <button onclick="window.location.href='/providers/appointments/details?ID=${appt.appointmentID}'">
+                Appointment Details
+              </button>
+            </section>
+          `;
+        }).join('');
+
+      }
+    }
+
+    loadAppointments();
+  </script>
+</body>
+</html>

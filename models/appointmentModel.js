@@ -75,6 +75,17 @@ function findAppointmentsByPatient(patientID) {
     return result.changes;
   }
 
+  function assignProvider({providerID, appointmentID}){
+    const stmt = db.prepare(`
+      UPDATE Appointments
+      SET providerID = ?
+      WHERE appointmentID = ?
+    `);
+
+    const result = stmt.run(providerID, appointmentID);
+    return result.changes;
+  }
+
 module.exports = {
     createAppointment,
     findAppointmentsById,
@@ -83,5 +94,6 @@ module.exports = {
     findAppointmentsByDate,
     findAppointments,
     sendConfirmation,
-    receiveIntake
+    receiveIntake,
+    assignProvider
 };

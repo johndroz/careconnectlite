@@ -372,6 +372,162 @@ app.post("/staff/appointments/updateStatus", (req, res) =>{
     res.redirect(`/staff/appointments/details?ID=${appointment.appointmentID}&update=${data.success}`);
 });
 
+//PROVIDER ROUTES
+app.use("/providers", requireAuth, requireRole("Staff", "Provider", "Clinic Administrator"));
+app.get("/providers/daily", (req, res) =>{
+    res.sendFile(path.join(__dirname, "pages/providers/providers-appointments-today.html"));
+});
+app.get("/providers/appointments/today", (req, res)=>{
+    //get appointments from today
+    const today = new Date().toLocaleDateString('en-CA');
+    const appointments = appointmentModel.findAppointmentsByDate(today);
+    const confirmedAppointments = [];
+    //add current status to each appointment and find confirmed appointments
+    appointments.forEach(appointment => {
+        let currentStatus = appointmentStatusModel.findCurrentStatusByAppointmentId(appointment.appointmentID);
+        appointment.currentStatus = currentStatus.status;
+        if (appointment.currentStatus == "Confirmed") confirmedAppointments.push(appointment);
+    });
+    //reverse so recent appointments display first
+    appointments.reverse();
+    const user = userModel.findUserById(req.session.user.userID);
+    res.json({
+        success: true,
+        confirmedAppointments,
+        user
+    });
+});
+app.get("/providers/appointments", (req, res) =>{
+    res.sendFile(path.join(__dirname, "pages/providers/providers-appointments.html"));
+});
+
+app.get("/providers/appointments/search", (req, res) =>{
+    const appointments = appointmentModel.findAppointments();
+    appointments.forEach(appointment => {
+        const currentStatus = appointmentStatusModel.findCurrentStatusByAppointmentId(appointment.appointmentID);
+        const patient = userModel.findUserById(appointment.patientID);
+        const provider = userModel.findUserById(appointment.providerID);
+        const [date, time] = appointment.datetime.split(' ');
+        appointment.currentStatus = currentStatus.status;
+        if(patient){
+            appointment.patientFirstName = `${patient.firstName}`;
+            appointment.patientLastName = `${patient.lastName}`;
+        } else {
+            appointment.patientFirstName = "Not Booked";
+            appointment.patientLastName = "";
+        }
+        if(provider){
+            appointment.providerFirstName = `${provider.firstName}`;
+            appointment.providerLastName = `${provider.lastName}`;
+        } else {
+            appointment.providerFirstName = "Not Assigned";
+            appointment.providerLastName = "";
+        }
+        appointment.date = date;
+        appointment.time = time;
+    });
+    appointments.reverse();
+    const user = userModel.findUserById(req.session.user.userID);
+    res.json({
+        success: true,
+        appointments,
+        user
+    });
+});
+app.get("/providers/appointments/details", (req, res) =>{
+    res.sendFile(path.join(__dirname, "pages/providers/providers-appointments-details.html"));
+});
+app.get("/providers/appointments/details/search", (req, res) =>{
+    const appointmentID = req.query.ID
+    const appointment = appointmentModel.findAppointmentsById(appointmentID);
+    const currentStatus = appointmentStatusModel.findCurrentStatusByAppointmentId(appointmentID);
+    appointment.currentStatus = currentStatus.status;
+    const patient = userModel.findUserById(appointment.patientID);
+    const provider = userModel.findUserById(appointment.providerID);
+    const [date, time] = appointment.datetime.split(' ');
+    const intake = intakeModel.findIntakeByAppointment(appointmentID);
+    const providers = userModel.findUsersByRole("Provider");
+
+    appointment.intake = intake;
+    appointment.currentStatus = currentStatus.status;
+    if(patient){
+        appointment.patientFirstName = `${patient.firstName}`;
+        appointment.patientLastName = `${patient.lastName}`;
+    } else {
+        appointment.patientFirstName = "Not Booked";
+        appointment.patientLastName = "";
+    }
+    if(provider){
+        appointment.providerFirstName = `${provider.firstName}`;
+        appointment.providerLastName = `${provider.lastName}`;
+    } else {
+        appointment.providerFirstName = "Not Assigned";
+        appointment.providerLastName = "";
+    }
+    appointment.date = date;
+    appointment.time = time;
+    const user = userModel.findUserById(req.session.user.userID);
+    res.json({
+        success: true,
+        appointment,
+        user,
+        providers
+    });
+
+});
+app.post("/providers/appointments/updateStatus", (req, res) =>{
+    data = {success: false, message: "Unable to update status."}
+    const statusForm = req.body;
+    const appointment = appointmentModel.findAppointmentsById(statusForm.ID);
+
+    //get current date in format (yyyy-mm-dd hh:mm:ss)
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    const seconds = String(now.getSeconds()).padStart(2, '0');
+    const formattedDate = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+
+    if(appointment){
+        try{
+            appointmentStatusModel.createAppointmentStatus({appointmentID: appointment.appointmentID, status: statusForm.appointmentStatus, datetime: formattedDate});
+            data.success = true;
+            data.message = "Appointment status has been successfully added."
+        }
+        catch(err){
+            console.log(err);
+        }
+    }
+    res.redirect(`/providers/appointments/details?ID=${appointment.appointmentID}&update=${data.success}`);
+});
+app.get("/providers/intake", (req, res) =>{
+    res.sendFile(path.join(__dirname, "pages/providers/intake.html"));
+});
+app.get("/providers/intake/search", (req, res) =>{
+    const formID = req.query.formID;
+    const intake = intakeModel.findIntakeByFormId(formID)
+    const user = userModel.findUserById(req.session.user.userID);
+    const appointment = appointmentModel.findAppointmentsById(intake.appointmentID);
+    const currentStatus = appointmentStatusModel.findCurrentStatusByAppointmentId(intake.appointmentID);
+    appointment.currentStatus = currentStatus.status;
+
+    res.json({
+        success: true,
+        intake,
+        user,
+        appointment
+    });
+});
+
+
+
+
+
+
+
+
 // set external port for express server
 app.listen(3000, () => {
     console.log('Server running on port 3000');

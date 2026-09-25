@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CareConnectLite</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+
+<body>
+  <header>
+    <nav>
+        <a href="index.html">CareConnectLite</a>
+        <ul>
+          <li><a href="/providers/daily">Today's Appointments</a></li>
+          <li><a href="/providers/appointments">All Appointments</a></li>
+            <li><a id="logout">Log Out</a></li>
+        </ul>
+    </nav>
+  </header>
+  <h1>Provider: View Intake Details</h1>
+  <div id="feedback"></div>
+
+  <!--INTAKE DETAILS-->
+  <main class="appointment-details">
+    <div id="intake-details"></div>
+
+
+      <!--MODAL FORM FOR LOGOUT-->
+      <dialog id="logoutModal">
+        <form action="/logout" method="POST" id="logoutForm">
+          <h3>Are You Sure You Want Log Out?</h3>
+          <div class="modal-actions">
+            <button type="button" id="closeModalBtn">Cancel</button>
+            <button type="submit">Yes, Log out</button>
+          </div>
+        </form>
+      </dialog>
+
+  </main>
+
+  <!--FOOTER-->
+  <footer>
+    <p>&copy; 2026 CareConnectLite</p>
+  </footer>
+
+  <script>
+    //get parameters
+    const params = new URLSearchParams(window.location.search);
+
+    //get feedback from responses
+    const feedback = document.getElementById("feedback");
+
+    //MODAL FORM FOR LOG OUT
+    const logoutModal = document.getElementById('logoutModal');
+    const logoutBtn = document.getElementById('logout');
+    const logoutClose = document.getElementById('closeModalBtn');
+    // Open the modal
+    logoutBtn.addEventListener('click', () => {
+      logoutModal.showModal();
+    });
+    // Close the modal manually with cancel button
+    logoutClose.addEventListener('click', () => {
+      logoutModal.close(); 
+    });
+    
+
+
+    //GET APPOINTMENT DETAILS
+    //get ID search parameters
+    const intakeID = params.get("ID");
+
+    async function loadIntake(){
+      const res = await fetch(`/providers/intake/search?formID=${intakeID}`);
+      const result = await res.json();
+      const intakeSection = document.getElementById("intake-details")
+      
+      //Retrieve successfully logged in patient info
+      if(result.success){
+        const user = result.user;
+        const appointment = result.appointment;
+        const intake = result.intake;
+        //handle no appointments
+        if (!intake || intake.length === 0) {
+            intakeSection.innerHTML = `
+            <p>No Intake Form Found.</p>
+            <a href="/providers/appointments">Search All Appointments</a>
+          `;
+          return;
+        }
+        //handle a list of appointments
+        const [date, time] = appointment.datetime.split(' ');
+        intakeSection.innerHTML = `
+            <section class="intake-details-card">
+                <div>
+                    Intake Form # ${intakeID}: <strong>${appointment.currentStatus}</strong>
+                
+                    <p>Reason: ${intake.appointmentReason}</p>
+                    <p>Symptoms: ${intake.symptoms}</p>
+                    <p>Patient Comments: ${intake.patientComments}</p>
+                    <div class="intake-details-options">
+                        <button onclick="window.location.href='/providers/appointments/details?ID=${appointment.appointmentID}'">Appointment Details</button>
+                    </div>
+                </div>
+            </section>
+          `;
+
+      }
+    }
+
+    loadIntake();
+
+  </script>
+</body>
+</html>

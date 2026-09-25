@@ -250,4 +250,13 @@ nav {
   justify-self: end;
 }
 
+section.intake-details-card {
+  display: grid;
+  grid-template-columns: 1fr;
+}
+
+.intake-details-options {
+  justify-self: center;
+}
+
 

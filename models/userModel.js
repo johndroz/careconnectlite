@@ -28,9 +28,9 @@ function findUserById(userID) {
 
 function findUsersByRole(roleName) {
   const stmt = db.prepare(`
-    SELECT userID, email, firstName, lastName, roleID, roleName
-    FROM Users JOIN Roles ON Users.roleID = Roles.roleID
-    WHERE userID = ?
+    SELECT u.userID, u.email, u.firstName, u.lastName, u.roleID, r.roleName
+    FROM Users u JOIN Roles r ON u.roleID = r.roleID
+    WHERE r.roleName = ?
   `);
   return stmt.all(roleName);
 }
@@ -38,5 +38,6 @@ function findUsersByRole(roleName) {
 module.exports = {
   createUser,
   findUserByEmail,
-  findUserById
+  findUserById,
+  findUsersByRole
 };
