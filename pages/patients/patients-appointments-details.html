@@ -36,6 +36,40 @@
         </form>
       </dialog>
 
+      <!--MODAL FORM TO FILL INTAKE-->
+      <dialog id="intakeModal">
+        <form action="/patients/intake/create" method="POST" id="intakeForm">
+            <h3>Appointment Intake Form</h3>
+          
+            <input id="appointmentID" name="appointmentID" type="hidden">
+            <div class="intake-row">
+                <label class="left-align" for="appointmentReason">Appointment Reason</label>
+                <select id="appointmentReason" name="appointmentReason" required>
+                <option value="">Select a reason</option>
+                <option value="Wellness Exam">Wellness Exam</option>
+                <option value="Follow-up Visit">Follow-up Visit</option>
+                <option value="New Patient Consultation">New Patient Consultation</option>
+                <option value="Sick Visit">Sick Visit</option>
+                <option value="Chronic Disease Management">Chronic Disease Management</option>
+                <option value="Medication Management">Medication Management</option>
+                <option value="Preventative Screening / Lab Work">Preventative Screening / Lab Work</option>
+                </select>
+            </div>
+            <div class="intake-row">
+                <label class="left-align" for="symptoms">Symptoms</label>
+                <textarea id="symptoms" name="symptoms" maxlength="100" placeholder="Describe symptoms, if any"></textarea>
+            </div>
+            <div class="intake-row">
+                <label class="left-align" for="patientComments">Additional Comments</label>
+                <textarea id="patientComments" name="patientComments" maxlength="250" placeholder="Any additional information for the provider"></textarea>
+            </div>
+            <div class="intake-row">
+                <button type="submit">Submit Intake</button>
+                <button type="button" id="cancelIntake">Cancel</button>
+            </div>
+          </form>
+      </dialog>
+
   </main>
 
   <!--FOOTER-->
@@ -49,6 +83,9 @@
 
     //get feedback from responses
     const feedback = document.getElementById("feedback");
+    const intakeSubmitted = params.get("intakeSubmitted");
+    if(intakeSubmitted == "false") feedback.innerText = "Intake was not submitted."
+    if(intakeSubmitted == "true") feedback.innerText = "Intake was submitted successfully."
 
     //MODAL FORM FOR LOG OUT
     const logoutModal = document.getElementById('logoutModal');
@@ -62,6 +99,7 @@
     logoutClose.addEventListener('click', () => {
       logoutModal.close(); 
     });
+
     
     //CONFIRM APPOINTMENT
     async function confirm(ID){
@@ -88,6 +126,8 @@
     //GET APPOINTMENT DETAILS
     //get ID search parameters
     const appointmentID = params.get("ID");
+    const appointmentIDField = document.getElementById("appointmentID");
+    appointmentIDField.value = appointmentID;
 
     async function loadAppointmentDetails(){
       const res = await fetch(`/patients/appointments/details/search?ID=${appointmentID}`);
@@ -109,43 +149,56 @@
         //handle a list of appointments
         const [date, time] = appointment.datetime.split(' ');
         currentAppointment.innerHTML = `
-            <section class="appointment-details-card">
-              <div>
-                Appointment # ${appointment.appointmentID}: <strong>${appointment.currentStatus}</strong>
-                <ul class="left-align">
-                  <li>Provider: ${appointment.providerFirstName} ${appointment.providerLastName}</li>
-                  <li>Appointment Type: ${appointment.appointmentType || 'Not selected yet'}</li>
-                  <li>Date: ${date}</li>
-                  <li>Time: ${time}</li>
-                  <li>Patient: ${appointment.patientFirstName} ${appointment.patientLastName}</li>
-                </ul>
-              </div>
-              <div class="appointment-card-buttons">
-                <button id="confirm" onclick="confirm(${appointment.appointmentID})" disabled></button>
-                <button id="intake" onclick"intake(${appointment.appointmentID})" disabled></button>
+        <section class="appointment-details-card">
+            <div>
+            Appointment # ${appointment.appointmentID}: <strong>${appointment.currentStatus}</strong>
+            <ul class="left-align">
+                <li>Provider: ${appointment.providerFirstName} ${appointment.providerLastName}</li>
+                <li>Appointment Type: ${appointment.appointmentType || 'Not selected yet'}</li>
+                <li>Date: ${date}</li>
+                <li>Time: ${time}</li>
+                <li>Patient: ${appointment.patientFirstName} ${appointment.patientLastName}</li>
+            </ul>
             </div>
-            </section>
-          `;
+            <div class="appointment-card-buttons">
+            <button id="confirm" onclick="confirm(${appointment.appointmentID})" disabled></button>
+            <button id="intake" onclick"intake(${appointment.appointmentID})" disabled></button>
+        </div>
+        </section>
+        `;
 
-          const confirmBtn = document.getElementById(`confirm`);
-          const intakeBtn = document.getElementById(`intake`);
-          const confirmationRequested = appointment.confirmationRequested;
-          const intakeSubmitted = appointment.intakeSubmitted;
-          if(confirmationRequested == 0 || (confirmationRequested == 1 && appointment.currentStatus != "Booked")) confirmBtn.innerText = "Not Confirmed"
-          if(appointment.currentStatus == "Confirmed") confirmBtn.innerText = "Appointment Confirmed";
-          if(confirmationRequested == 1 && appointment.currentStatus == "Booked"){
+        const confirmBtn = document.getElementById(`confirm`);
+        const intakeBtn = document.getElementById(`intake`);
+        const confirmationRequested = appointment.confirmationRequested;
+        const intakeSubmitted = appointment.intakeSubmitted;
+        if(confirmationRequested == 0 || (confirmationRequested == 1 && appointment.currentStatus != "Booked")) confirmBtn.innerText = "Not Confirmed"
+        if(appointment.currentStatus == "Confirmed") confirmBtn.innerText = "Appointment Confirmed";
+        if(confirmationRequested == 1 && appointment.currentStatus == "Booked"){
             confirmBtn.innerText = "Confirm Appointment";
             confirmBtn.disabled = false;
-          } 
-          if(intakeSubmitted == 1) intakeBtn.innerText = "Intake Submitted";
-          if(intakeSubmitted == 0) intakeBtn.innerText = "Intake not Completed"
-          if(intakeSubmitted == 0 && appointment.currentStatus == "Confirmed"){
+        } 
+        if(intakeSubmitted == 1) intakeBtn.innerText = "Intake Submitted";
+        if(intakeSubmitted == 0) intakeBtn.innerText = "Intake not Completed"
+        if(intakeSubmitted == 0 && appointment.currentStatus == "Confirmed"){
             intakeBtn.innerText = "Submit Intake";
             intakeBtn.disabled = false;
-          } 
+        } 
 
+        //MODAL FORM FOR INTAKE SUBMISSION
+        const intakeModal = document.getElementById('intakeModal');
+        const intakeClose = document.getElementById('cancelIntake');
+        const appointmentReason = document.getElementById('appointmentReason');
+        // Open the modal
+        intakeBtn.addEventListener('click', () => {
+            if(!appointmentReason.required) appointmentReason.required = true;
+            intakeModal.showModal();
+        });
+        // Close the modal manually with cancel button
+        intakeClose.addEventListener('click', () => {
+            if(appointmentReason.required) appointmentReason.required = false;
+            intakeModal.close(); 
+        });
        
-
       }
     }
 

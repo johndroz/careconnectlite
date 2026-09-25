@@ -68,11 +68,11 @@ function findAppointmentsByPatient(patientID) {
     const stmt = db.prepare(`
       UPDATE Appointments
       SET intakeSubmitted = 1
-      WEHERE appointmentID = ?
+      WHERE appointmentID = ?
     `);
 
     const result = stmt.run(appointmentID);
-    return result.lastInsertRowid;
+    return result.changes;
   }
 
 module.exports = {

@@ -31,27 +31,6 @@ CREATE TABLE IF NOT EXISTS Appointments (
   FOREIGN KEY (providerID) REFERENCES Users(userID)
 );
 
-CREATE TABLE IF NOT EXISTS IntakeForms (
-  formID INTEGER PRIMARY KEY AUTOINCREMENT,
-  appointmentID INTEGER NOT NULL UNIQUE,
-  patientDOB TEXT NOT NULL,
-  patientGender TEXT NOT NULL CHECK (patientGender IN ('M', 'F', 'NB')),
-  appointmentReason TEXT NOT NULL CHECK (
-    appointmentReason IN (
-      'Wellness Exam',
-      'Follow-up Visit',
-      'New Patient Consultation',
-      'Sick Visit',
-      'Chronic Disease Management',
-      'Medication Management',
-      'Preventative Screening / Lab Work'
-    )
-  ),
-  symptoms TEXT CHECK (length(symptoms) <= 100),
-  patientComments TEXT CHECK (length(patientComments) <= 250),
-  FOREIGN KEY (appointmentID) REFERENCES Appointments(appointmentID)
-);
-
 CREATE TABLE IF NOT EXISTS AppointmentStatuses (
   statusID INTEGER PRIMARY KEY AUTOINCREMENT,
   appointmentID INTEGER NOT NULL,
@@ -76,4 +55,25 @@ CREATE TABLE IF NOT EXISTS ActivityLog (
   eventType TEXT NOT NULL,
   datetime TEXT NOT NULL,
   FOREIGN KEY (userID) REFERENCES Users(userID)
+);
+
+CREATE TABLE IntakeForms (
+  formID INTEGER PRIMARY KEY AUTOINCREMENT,
+  appointmentID INTEGER NOT NULL UNIQUE,
+  patientID INTEGER NOT NULL,
+  appointmentReason TEXT NOT NULL CHECK (
+    appointmentReason IN (
+      'Wellness Exam',
+      'Follow-up Visit',
+      'New Patient Consultation',
+      'Sick Visit',
+      'Chronic Disease Management',
+      'Medication Management',
+      'Preventative Screening / Lab Work'
+    )
+  ),
+  symptoms TEXT CHECK (length(symptoms) <= 100),
+  patientComments TEXT CHECK (length(patientComments) <= 250),
+  FOREIGN KEY (appointmentID) REFERENCES Appointments(appointmentID),
+  FOREIGN KEY (patientID) REFERENCES Users(userID)
 );

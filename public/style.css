@@ -10,6 +10,25 @@
     border: 2px solid red;
   }
 
+  dialog {
+    padding: 20px;
+    border: none;
+    border-radius: 8px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+    width: 300px;
+  }
+  
+  dialog::backdrop {
+    background-color: rgba(0, 0, 0, 0.5);
+  }
+  
+  .modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 15px;
+  }
+
 /* NAVIGATION */
 nav {
     display: flex;
@@ -207,21 +226,28 @@ nav {
     width: 100%;
 }
 
-dialog {
-    padding: 20px;
-    border: none;
-    border-radius: 8px;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
-    width: 300px;
-  }
-  
-  dialog::backdrop {
-    background-color: rgba(0, 0, 0, 0.5);
-  }
-  
-  .modal-actions {
-    display: flex;
-    justify-content: flex-end;
-    gap: 10px;
-    margin-top: 15px;
-  }
+/*INTAKE FORM*/
+#intakeModal {
+  width: fit-content;
+}
+#intakeForm {
+  display: grid;
+  min-width: 350px;
+}
+
+.intake-row {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  margin: 5px;
+}
+
+.intake-row label {
+  justify-self: start;
+}
+
+.intake-row button {
+  width: 100px;
+  justify-self: end;
+}
+
+

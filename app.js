@@ -8,6 +8,7 @@ const appointmentModel = require("./models/appointmentModel");
 const userModel = require('./models/userModel');
 const roleModel = require('./models/roleModel');
 const appointmentStatusModel = require('./models/appointmentStatusModel');
+const intakeModel = require('./models/intakeModel');
 
 
 //settings for the express server
@@ -193,7 +194,37 @@ app.post("/patients/appointments/confirmation", (req, res) =>{
         }
     }
     res.json(data);
-})
+});
+app.post("/patients/intake/create", (req, res) =>{
+    const data = {success: false, message: "Intake was not submitted."};
+    const intake = req.body;
+    const appointmentID = intake.appointmentID;
+    const patientID = req.session.user.userID;
+    const appointment = appointmentModel.findAppointmentsById(appointmentID);
+    const currentStatus = appointmentStatusModel.findCurrentStatusByAppointmentId(appointmentID);
+    appointment.currentStatus = currentStatus.status;
+
+    if(appointment.currentStatus == "Confirmed" && appointment.intakeSubmitted == 0 && appointment.patientID == patientID){
+        try{
+            const changes = appointmentModel.receiveIntake(appointmentID);
+            const formID = intakeModel.createIntake({
+                appointmentID: appointmentID,
+                patientID: patientID,
+                appointmentReason: intake.appointmentReason,
+                symptoms: intake.symptoms,
+                patientComments: intake.patientComments
+            });
+            if(changes > 0 && formID){
+                res.redirect(`/patients/appointments/details?ID=${intake.appointmentID}&intakeSubmitted=true`);
+            }
+        } catch(err){
+            console.log(err)
+            res.redirect(`/patients/appointments/details?ID=${intake.appointmentID}&intakeSubmitted=false`);
+        }
+    }
+});
+
+
 
 //STAFF ROUTES
 app.use("/staff", requireAuth, requireRole("Staff", "Provider", "Clinic Administrator"));
