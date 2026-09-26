@@ -26,13 +26,36 @@ function findUserById(userID) {
   return stmt.get(userID);
 }
 
-function findUsersByRole(roleName) {
+function findUsersByRole(roleName = null) {
+  roleName = roleName || null;
   const stmt = db.prepare(`
     SELECT u.userID, u.email, u.firstName, u.lastName, u.roleID, r.roleName
     FROM Users u JOIN Roles r ON u.roleID = r.roleID
-    WHERE r.roleName = ?
+    WHERE (? IS NULL OR r.roleName = ?)
   `);
-  return stmt.all(roleName);
+  return stmt.all(roleName, roleName);
+}
+
+function updateUserRole(userID, roleID){
+  const stmt = db.prepare(`
+    UPDATE Users
+    SET roleID = ?
+    WHERE userID = ?
+    `);
+    
+    const result = stmt.run(roleID, userID);
+    return result.changes;
+}
+
+function updateUserStatus(userID, status){
+  const stmt = db.prepare(`
+    UPDATE Users
+    SET isActive = ?
+    WHERE userID = ?
+    `);
+
+    const result = stmt.run(status, userID);
+    return result.changes;
 }
 
 module.exports = {

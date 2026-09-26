@@ -259,4 +259,30 @@ section.intake-details-card {
   justify-self: center;
 }
 
+/*USERS*/
+.users-section {
+  max-width: 600px;
+  width: 90%;
+  margin: 80px auto;
+  padding: 32px;
+  text-align: center;
+}
+
+.users-section section {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-items: center;
+  border: #7f7f7f solid 1px;
+  border-radius: 10px;
+  padding: 20px;
+  margin: 10px;
+}
+
+.users-section button {
+  height: 3rem;
+}
+
+.users-section ul {
+  list-style: none;
+}
 

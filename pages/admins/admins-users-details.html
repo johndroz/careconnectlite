@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CareConnectLite</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+
+<body>
+  <header>
+    <nav>
+        <a href="index.html">CareConnectLite</a>
+        <ul>
+          <li><a href="/admins/daily">Today's Appointments</a></li>
+          <li><a href="/admins/appointments">All Appointments</a></li>
+          <li><a href="/admins/users">View Users</a></li>
+            <li><a id="logout">Log Out</a></li>
+        </ul>
+    </nav>
+  </header>
+  <h1>Administrator: View User Details</h1>
+  <div id="feedback"></div>
+
+  <!--APPOINTMENT DETAILS-->
+  <main class="user-details">
+    <div id="user-details"></div>
+
+    <!--MODAL FORM ROLE UPDATES-->
+    <dialog id="roleModal">
+        <form action="/admins/users/role/update" method="POST" id="roleForm">
+          <h3>Update User Role</h3>
+          <label for="userRole">userRole:</label>
+          <select type="text" id="userRole" name="userRole" required>
+            <option value="1">Patient</option>
+            <option value="2">Staff</option>
+            <option value="3">Provider</option>
+            <option value="4">Clinic Administrator</option>
+          </select>
+          <div class="modal-actions">
+            <button type="button" id="closeRoleModalBtn">Cancel</button>
+            <button type="button">Submit</button>
+          </div>
+          <input type="hidden" name="ID" id="userID">
+        </form>
+      </dialog>
+
+      <!--CONFIRM DELETE USER-->
+      <dialog id="logoutModal">
+        <form action="/admins/users/delete" method="POST" id="logoutForm">
+          <h3>Are You Sure You Want to Delete this User?</h3>
+          <div class="modal-actions">
+            <button type="button" id="closeDeleteModalBtn">Cancel</button>
+            <button type="button">Yes, Delete User Permanently</button>
+          </div>
+        </form>
+      </dialog>
+
+      <!--MODAL FORM FOR LOGOUT-->
+      <dialog id="logoutModal">
+        <form action="/logout" method="POST" id="logoutForm">
+          <h3>Are You Sure You Want Log Out?</h3>
+          <div class="modal-actions">
+            <button type="button" id="closeModalBtn">Cancel</button>
+            <button type="submit">Yes, Log out</button>
+          </div>
+        </form>
+      </dialog>
+
+  </main>
+
+  <!--FOOTER-->
+  <footer>
+    <p>&copy; 2026 CareConnectLite</p>
+  </footer>
+
+  <script>
+    //get parameters
+    const params = new URLSearchParams(window.location.search);
+    const userID = params.get("ID");
+
+    //get feedback from responses
+    const feedback = document.getElementById("feedback");
+
+    //MODAL FORM FOR LOG OUT
+    const logoutModal = document.getElementById('logoutModal');
+    const logoutBtn = document.getElementById('logout');
+    const logoutClose = document.getElementById('closeModalBtn');
+    // Open the modal
+    logoutBtn.addEventListener('click', () => {
+      logoutModal.showModal();
+    });
+    // Close the modal manually with cancel button
+    logoutClose.addEventListener('click', () => {
+      logoutModal.close(); 
+    });
+
+
+    //GET APPOINTMENT DETAILS
+    //get ID search parameters
+    async function loadAppointmentDetails(){
+      const res = await fetch(`/admins/users/details/search?ID=${userID}`);
+      const result = await res.json();
+      const currentUser = document.getElementById("user-details")
+      
+      //Retrieve user and get current admin
+      if(result.success){
+        const admin = result.admin;
+        const user = result.user;
+        //handle no users
+        if (!user || user.length === 0) {
+            currentAppointment.innerHTML = `
+            <p>No User Details Found.</p>
+          `;
+          return;
+        }
+        //handle user details
+        currentUser.innerHTML = `
+            <section class="user-details-card">
+              <div>
+                User ID: <strong>${user.userID}</strong>
+                <ul class="left-align">
+                  <li>Provider: <u>${user.firstName} ${user.lastName}</u></li>
+                  <li>Role: ${user.roleName}</li>
+                </ul>
+              </div>
+              <div class="user-details-options">
+                <button id="updateStatus">Update Appointment Status</button>
+                <button id="assignBtn">Assign Provider</button>
+              </div>
+            </section>
+          `;
+
+        //MODAL FOR ROLE UPDATE
+        const statusModal = document.getElementById('statusModal');
+        const openBtn = document.getElementById('updateStatus');
+        const closeStatusBtn = document.getElementById('closeStatusModalBtn');
+        const statusForm = document.getElementById('statusForm');
+        const statusFormID = document.getElementById('statusAppointmentID');
+        //Set appointment ID for status updates
+        statusFormID.value = appointmentID;
+        // Open the modal
+        openBtn.addEventListener('click', () => {
+          statusModal.showModal();
+        });
+        // Close the modal manually with cancel button
+        closeStatusBtn.addEventListener('click', () => {
+          statusModal.close(); 
+        });
+        statusForm.addEventListener('submit', (event) => {
+            //get the status value that I could use to make the update
+            const status = document.getElementById('appointmentStatus').value;
+            alert("Appointment Status update to: " + status);
+        });
+
+        //MODAL FOR CONFIRM DELETE
+        const logoutModal = document.getElementById('logoutModal');
+        const logoutBtn = document.getElementById('logout');
+        const logoutClose = document.getElementById('closeModalBtn');
+        // Open the modal
+        logoutBtn.addEventListener('click', () => {
+        logoutModal.showModal();
+        });
+        // Close the modal manually with cancel button
+        logoutClose.addEventListener('click', () => {
+        logoutModal.close(); 
+        });
+
+      }
+    }
+
+    loadAppointmentDetails();
+
+  </script>
+</body>
+</html>

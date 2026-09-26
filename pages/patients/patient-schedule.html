@@ -4,23 +4,122 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>CareConnectLite</title>
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="/style.css">
 </head>
 
 <body>
   <header>
     <nav>
-        <a href="index.html">CareConnectLite</a>
+        <a href="/">CareConnectLite</a>
         <ul>
+          <li><a href="/patients/account">My Appointments</a></li>
+          <li><a id="logout">Log Out</a></li>
         </ul>
     </nav>
   </header>
   <main>
-    <h1>Still under construction</h1>
+    <h1>Browse Available Appointments</h1>
+    <div id="feedback"></div>
+    <div id="available-appointments"></div>
 
+
+    <!--MODAL FORM FOR LOGOUT-->
+    <dialog id="logoutModal">
+      <form action="/logout" method="POST" id="logoutModalForm">
+        <h3>Are You Sure You Want Log Out?</h3>
+        <div class="modal-actions">
+          <button type="button" id="closelogoutModalBtn">Cancel</button>
+          <button type="submit">Yes, Log out</button>
+        </div>
+      </form>
+    </dialog>
   </main>
 
   <!--FOOTER-->
   <footer><p>&copy; 2026 CareConnectLite</p></footer>
+  <script>
+    //DIV FOR FEEDBACK FROM RESPONSES
+    const feedback = document.getElementById("feedback");
+
+    //MODAL FORM FOR LOG OUT
+    const modal = document.getElementById('logoutModal');
+    const logoutBtn = document.getElementById('logout');
+    const closeBtn = document.getElementById('closelogoutModalBtn');
+    // Open the modal
+    logoutBtn.addEventListener('click', () => {
+    modal.showModal();
+    });
+    // Close the modal manually with cancel button
+    closeBtn.addEventListener('click', () => {
+    modal.close(); 
+    });
+
+
+    //get parameters
+    const params = new URLSearchParams(window.location.search);
+
+    //FETCH AVAILABLE APPOINTMENTS
+    async function getAvailableAppointments(){
+      const res = await fetch("/patients/schedule/search");
+      const result = await res.json();
+      const appointmentSection = document.getElementById("available-appointments");
+
+      if(result.success){
+        const appointments = result.availableAppointments;
+        const user = result.user;
+        //handle no appointments
+        if (!appointments || appointments.length === 0) {
+          appointmentSection.innerHTML = `
+            <p>No Appointments Currently. Check back soon.</p>
+          `;
+          return;
+        }
+        //handle a list of appointments
+        appointmentSection.innerHTML = appointments.map(appointment =>{
+          const [date, time] = appt.datetime.split(' ');
+          return `
+          <section class="appointment-card">
+              <div>
+                <p><strong>Date: </strong>${date}</p>
+                <p>Time: ${time}</p>
+              </div>
+              <button onclick="book(${user.userID, appointment.appointmentID})">
+                Appointment Details
+              </button>
+            </section>
+          `
+        })
+        
+      } else {
+        feedback.innerText = "Failed to get appointments."
+      }
+    }
+
+    //BOOK APPOINTMENTS
+    async function book(userID, appointmentID){
+      const res = await fetch("/patients/appointments/book", {
+        method: "POST",
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+          'userID': userID,
+          'appointmentID': appointmentID
+        })
+      });
+      const result = await res.json();
+      if(result.success){
+        alert(`Successfully booked appointment #: ${appointmentID}`);
+        window.location.href("/patients/account");
+      } else {
+        alert("Failed to book appointment.");
+        window.location.reload();
+      }
+
+    }
+
+    getAvailableAppointments();
+    
+
+
+  </script>
 </body>
 </html>

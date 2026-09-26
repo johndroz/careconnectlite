@@ -9,6 +9,7 @@ const userModel = require('./models/userModel');
 const roleModel = require('./models/roleModel');
 const appointmentStatusModel = require('./models/appointmentStatusModel');
 const intakeModel = require('./models/intakeModel');
+const {getDate, getNextWeekday} = require('./function')
 
 
 //settings for the express server
@@ -34,6 +35,8 @@ app.get('/login', (req, res) => {
         const role = req.session.user.role;
         if(role == "Patient") return res.sendFile(path.join(__dirname, "pages/patients/patient-account.html"));
         else if (role === 'Staff') return res.sendFile(path.join(__dirname, "pages/staff/staff-appointments-today.html"));
+        else if (role === 'Provider') return res.sendFile(path.join(__dirname, "pages/providers/providers-appointments-today.html"));
+        else if (role === 'Clinic Administrator') return res.sendFile(path.join(__dirname, "pages/admins/admins-appointments-today.html"));
     }
     
     res.sendFile(path.join(__dirname, "pages/login.html"));
@@ -45,6 +48,8 @@ app.get('/signup', (req, res) => {
         const role = req.session.user.role;
         if(role == "Patient") return res.sendFile(path.join(__dirname, "pages/patients/patient-account.html"));
         else if (role === 'Staff') return res.sendFile(path.join(__dirname, "pages/staff/staff-appointments-today.html"));
+        else if (role === 'Provider') return res.sendFile(path.join(__dirname, "pages/providers/providers-appointments-today.html"));
+        else if (role === 'Clinic Administrator') return res.sendFile(path.join(__dirname, "pages/admins/admins-appointments-today.html"));
     }
     res.sendFile(path.join(__dirname, "pages/signup.html"));
 });
@@ -71,7 +76,7 @@ app.post('/login', async (req, res) => {
     const { email, password } = req.body;
     const user = userModel.findUserByEmail(email);
     //send error as query parameters for failed logins to display to user
-    if (!user) {
+    if (!user || user.isActive == 0) {
         return res.redirect("/login?error=user")
     } 
     //get roleName from roleID
@@ -92,6 +97,8 @@ app.post('/login', async (req, res) => {
     //redirect user based on role
     if (role.roleName === 'Patient') return res.sendFile(path.join(__dirname, "pages/patients/patient-account.html"));
     else if (role.roleName === 'Staff') return res.sendFile(path.join(__dirname, "pages/staff/staff-appointments-today.html"));
+    else if (role.roleName === 'Provider') return res.sendFile(path.join(__dirname, "pages/providers/providers-appointments-today.html"));
+    else if (role.roleName === 'Clinic Administrator') return res.sendFile(path.join(__dirname, "pages/admins/admins-appointments-today.html"));
     else res.redirect("/")
   });
 
@@ -171,14 +178,7 @@ app.post("/patients/appointments/confirmation", (req, res) =>{
     const data = {success: false, message: "Unable to confirm"};
 
     //get current date in format (yyyy-mm-dd hh:mm:ss)
-    const now = new Date();
-    const year = now.getFullYear();
-    const month = String(now.getMonth() + 1).padStart(2, '0');
-    const day = String(now.getDate()).padStart(2, '0');
-    const hours = String(now.getHours()).padStart(2, '0');
-    const minutes = String(now.getMinutes()).padStart(2, '0');
-    const seconds = String(now.getSeconds()).padStart(2, '0');
-    const formattedDate = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+    const formattedDate = getDate();
 
     const currentStatus = appointmentStatusModel.findCurrentStatusByAppointmentId(appointmentID);
     appointment.currentStatus = currentStatus.status;
@@ -221,6 +221,57 @@ app.post("/patients/intake/create", (req, res) =>{
             console.log(err)
             res.redirect(`/patients/appointments/details?ID=${intake.appointmentID}&intakeSubmitted=false`);
         }
+    }
+});
+app.get("/patients/schedule", (req, res) =>{
+    res.sendFile(path.join(__dirname, "pages/patients/patient-schedule.html"));
+});
+app.get("/patients/schedule/search", (req, res) =>{
+    try{
+        const user = req.session.user;
+        const appointments = appointmentModel.findAppointments({after: getDate()});
+        const availableAppointments = [];
+        appointments.forEach(appointment =>{
+            const currentStatus = appointmentStatusModel.findCurrentStatusByAppointmentId(appointment.appointmentID);
+            appointment.currentStatus = currentStatus.status;
+            if(appointment.currentStatus == "Available") availableAppointments.push(appointment);
+        });
+        res.json({
+            success: true,
+            availableAppointments,
+            user
+        });
+    }
+    catch(err){
+        console.log(err);
+        res.json({
+            success: false
+        });
+    }
+});
+app.post("/patients/appointments/book", (req, res) =>{
+    const appointmentID = req.body.appointmentID;
+    const userID = req.body.userID;
+
+    try{
+        const appointment = appointmentModel.findAppointmentsById(appointmentID);
+        const currentStatus = appointmentStatusModel.findCurrentStatusByAppointmentId(appointmentID);
+        if(currentStatus.status == "Available" && !appointment.patientID){
+            const changes = appointmentModel.assignPatient(userID, appointmentID);
+            if(changes > 0){
+                res.json({
+                    success: true,
+                    message: "Appointment successfully booked."
+                });
+            }
+        }
+
+    } catch(err){
+        console.log(err);
+        res.json({
+            success: true,
+            message: "Appointment successfully booked."
+        });
     }
 });
 
@@ -348,16 +399,8 @@ app.post("/staff/appointments/updateStatus", (req, res) =>{
     data = {success: false, message: "Unable to update status."}
     const statusForm = req.body;
     const appointment = appointmentModel.findAppointmentsById(statusForm.ID);
-
     //get current date in format (yyyy-mm-dd hh:mm:ss)
-    const now = new Date();
-    const year = now.getFullYear();
-    const month = String(now.getMonth() + 1).padStart(2, '0');
-    const day = String(now.getDate()).padStart(2, '0');
-    const hours = String(now.getHours()).padStart(2, '0');
-    const minutes = String(now.getMinutes()).padStart(2, '0');
-    const seconds = String(now.getSeconds()).padStart(2, '0');
-    const formattedDate = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+    const formattedDate = getDate();
 
     if(appointment){
         try{
@@ -373,7 +416,7 @@ app.post("/staff/appointments/updateStatus", (req, res) =>{
 });
 
 //PROVIDER ROUTES
-app.use("/providers", requireAuth, requireRole("Staff", "Provider", "Clinic Administrator"));
+app.use("/providers", requireAuth, requireRole("Provider", "Clinic Administrator"));
 app.get("/providers/daily", (req, res) =>{
     res.sendFile(path.join(__dirname, "pages/providers/providers-appointments-today.html"));
 });
@@ -479,16 +522,7 @@ app.post("/providers/appointments/updateStatus", (req, res) =>{
     data = {success: false, message: "Unable to update status."}
     const statusForm = req.body;
     const appointment = appointmentModel.findAppointmentsById(statusForm.ID);
-
-    //get current date in format (yyyy-mm-dd hh:mm:ss)
-    const now = new Date();
-    const year = now.getFullYear();
-    const month = String(now.getMonth() + 1).padStart(2, '0');
-    const day = String(now.getDate()).padStart(2, '0');
-    const hours = String(now.getHours()).padStart(2, '0');
-    const minutes = String(now.getMinutes()).padStart(2, '0');
-    const seconds = String(now.getSeconds()).padStart(2, '0');
-    const formattedDate = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+    const formattedDate = getDate();
 
     if(appointment){
         try{
@@ -520,6 +554,195 @@ app.get("/providers/intake/search", (req, res) =>{
         appointment
     });
 });
+
+
+//ADMINISTRATOR ROUTES
+app.use("/admins", requireAuth, requireRole("Clinic Administrator"));
+app.get("/admins/daily", (req, res) =>{
+    res.sendFile(path.join(__dirname, "pages/admins/admins-appointments-today.html"));
+});
+app.get("/admins/appointments/today", (req, res)=>{
+    //get appointments from today
+    const today = new Date().toLocaleDateString('en-CA');
+    const appointments = appointmentModel.findAppointmentsByDate(today);
+    //add current status to each appointment
+    appointments.forEach(appointment => {
+        let currentStatus = appointmentStatusModel.findCurrentStatusByAppointmentId(appointment.appointmentID);
+        appointment.currentStatus = currentStatus.status;
+    });
+    //reverse so recent appointments display first
+    appointments.reverse();
+    const user = userModel.findUserById(req.session.user.userID);
+    res.json({
+        success: true,
+        appointments,
+        user
+    });
+});
+
+app.get("/admins/appointments", (req, res) =>{
+    res.sendFile(path.join(__dirname, "pages/admins/admins-appointments.html"));
+});
+
+app.get("/admins/appointments/search", (req, res) =>{
+    const appointments = appointmentModel.findAppointments();
+    appointments.forEach(appointment => {
+        const currentStatus = appointmentStatusModel.findCurrentStatusByAppointmentId(appointment.appointmentID);
+        const patient = userModel.findUserById(appointment.patientID);
+        const provider = userModel.findUserById(appointment.providerID);
+        const [date, time] = appointment.datetime.split(' ');
+        appointment.currentStatus = currentStatus.status;
+        if(patient){
+            appointment.patientFirstName = `${patient.firstName}`;
+            appointment.patientLastName = `${patient.lastName}`;
+        } else {
+            appointment.patientFirstName = "Not Booked";
+            appointment.patientLastName = "";
+        }
+        if(provider){
+            appointment.providerFirstName = `${provider.firstName}`;
+            appointment.providerLastName = `${provider.lastName}`;
+        } else {
+            appointment.providerFirstName = "Not Assigned";
+            appointment.providerLastName = "";
+        }
+        appointment.date = date;
+        appointment.time = time;
+    });
+    appointments.reverse();
+    const user = userModel.findUserById(req.session.user.userID);
+    res.json({
+        success: true,
+        appointments,
+        user
+    });
+});
+app.get("/admins/appointments/details", (req, res) =>{
+    res.sendFile(path.join(__dirname, "pages/admins/admins-appointments-details.html"));
+});
+app.get("/admins/admins/details/search", (req, res) =>{
+    const appointmentID = req.query.ID
+    const appointment = appointmentModel.findAppointmentsById(appointmentID);
+    const currentStatus = appointmentStatusModel.findCurrentStatusByAppointmentId(appointmentID);
+    appointment.currentStatus = currentStatus.status;
+    const patient = userModel.findUserById(appointment.patientID);
+    const provider = userModel.findUserById(appointment.providerID);
+    const [date, time] = appointment.datetime.split(' ');
+    const intake = intakeModel.findIntakeByAppointment(appointmentID);
+    const providers = userModel.findUsersByRole("Provider");
+
+    appointment.intake = intake;
+    appointment.currentStatus = currentStatus.status;
+    if(patient){
+        appointment.patientFirstName = `${patient.firstName}`;
+        appointment.patientLastName = `${patient.lastName}`;
+    } else {
+        appointment.patientFirstName = "Not Booked";
+        appointment.patientLastName = "";
+    }
+    if(provider){
+        appointment.providerFirstName = `${provider.firstName}`;
+        appointment.providerLastName = `${provider.lastName}`;
+    } else {
+        appointment.providerFirstName = "Not Assigned";
+        appointment.providerLastName = "";
+    }
+    appointment.date = date;
+    appointment.time = time;
+    const user = userModel.findUserById(req.session.user.userID);
+    res.json({
+        success: true,
+        appointment,
+        user,
+        providers
+    });
+
+});
+app.post("/admins/admins/updateStatus", (req, res) =>{
+    data = {success: false, message: "Unable to update status."}
+    const statusForm = req.body;
+    const appointment = appointmentModel.findAppointmentsById(statusForm.ID);
+    const formattedDate = getDate();
+
+    if(appointment){
+        try{
+            appointmentStatusModel.createAppointmentStatus({appointmentID: appointment.appointmentID, status: statusForm.appointmentStatus, datetime: formattedDate});
+            data.success = true;
+            data.message = "Appointment status has been successfully added."
+        }
+        catch(err){
+            console.log(err);
+        }
+    }
+    res.redirect(`/admins/appointments/details?ID=${appointment.appointmentID}&update=${data.success}`);
+});
+app.get("/admins/intake", (req, res) =>{
+    res.sendFile(path.join(__dirname, "pages/admins/intake.html"));
+});
+app.get("/admins/intake/search", (req, res) =>{
+    const formID = req.query.formID;
+
+    try{
+        const intake = intakeModel.findIntakeByFormId(formID)
+        const user = userModel.findUserById(req.session.user.userID);
+        const appointment = appointmentModel.findAppointmentsById(intake.appointmentID);
+        const currentStatus = appointmentStatusModel.findCurrentStatusByAppointmentId(intake.appointmentID);
+        appointment.currentStatus = currentStatus.status;
+        res.json({
+            success: true,
+            intake,
+            user,
+            appointment
+        });
+    } catch (err){
+        console.log(err);
+        res.json({
+            success: false
+        });
+    }
+});
+app.get("/admins/users", (req, res) =>{
+    res.sendFile(path.join(__dirname, "pages/admins/admins-users.html"));
+});
+app.get("/admins/users/search", (req, res) =>{
+    const user = req.session.user;
+    try{
+        const users = userModel.findUsersByRole();
+        res.json({
+            success: true,
+            users,
+            user
+        });
+    } catch (err) {
+        console.log(err);
+        res.json({
+            success: false
+        })
+    }
+});
+app.get("/admins/users/details", (req, res) =>{
+    res.sendFile(path.join(__dirname, "pages/admins/admins-users-details.html"));
+});
+app.get("/admins/users/details/search", (req, res) =>{
+    const admin = req.session.user;
+    const userID = req.query.ID;
+
+    try{
+        user = userModel.findUserById(userID);
+        res.json({
+            success: true,
+            admin,
+            user
+        })
+    } catch(err){
+        console.log(err);
+        res.json({
+            success: false
+        });
+    }
+});
+
+
 
 
 

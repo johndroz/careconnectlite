@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CareConnectLite</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+
+<body>
+  <header>
+    <nav>
+        <a href="/">CareConnectLite</a>
+        <ul>
+            <li><a href="/admins/daily">Today's Appointments</a></li>
+            <li><a href="/admins/appointments">All Appointments</a></li>
+            <li><a id="logout">Log Out</a></li>
+        </ul>
+    </nav>
+  </header>
+  <main class="users-section">
+    <h1 id="greeting"></h1>
+    <h2>Viewing all Users</h2>
+    <div id="feedback"></div>
+
+    <!--SEARCH FORM-->
+    <form id="search-form" action="/admins/users" method="GET">
+      
+      <label for="userID">User ID</label>
+      <input type="text" id="userID" name="userID" placeholder="1, 2, 3...">
+      <label for="name">Name</label>
+      <input type="text" id="name" name="name" placeholder="Name of user...">
+      <label for="role">Role</label>
+      <select id="role" name="role">
+        <option value="">Any Role</option>
+        <option value="Patient">Patient</option>
+        <option value="Staff">Staff</option>
+        <option value="Provider">Provider</option>
+        <option value="Clinic Administrator">Clinic Administrator</option>
+      </select>
+      <button type="submit">Search</button>
+      <a href="/admins/users">Clear Search</a>
+    </form>
+    
+    <!--USERS-->
+    <div id="current-users"></div>
+
+    <!--MODAL FORM FOR LOGOUT-->
+    <dialog id="inputModal">
+      <form action="/logout" method="POST" id="modalForm">
+        <h3>Are You Sure You Want Log Out?</h3>
+        <div class="modal-actions">
+          <button type="button" id="closeModalBtn">Cancel</button>
+          <button type="submit">Yes, Log out</button>
+        </div>
+      </form>
+    </dialog>
+
+  </main>
+
+  <!--FOOTER-->
+  <footer>
+    <p>&copy; 2026 CareConnectLite</p>
+  </footer>
+  <script>
+    //get feedback from responses
+    const feedback = document.getElementById("feedback");
+
+    //MODAL FORM FOR LOG OUT
+    const modal = document.getElementById('inputModal');
+    const logoutBtn = document.getElementById('logout');
+    const closeBtn = document.getElementById('closeModalBtn');
+    // Open the modal
+    logoutBtn.addEventListener('click', () => {
+    modal.showModal();
+    });
+    // Close the modal manually with cancel button
+    closeBtn.addEventListener('click', () => {
+    modal.close(); 
+    });
+
+
+    //get appointment data
+    async function loadUsers(){
+      const res = await fetch("/admins/users/search");
+      const result = await res.json();
+      const greeting = document.getElementById("greeting");
+      const currentUsers = document.getElementById("current-users");
+
+      //get search parameters
+      const params = new URLSearchParams(window.location.search);
+      const searchID = params.get("userID");
+      const searchName = params.get("name");
+      const searchRole = params.get("role");
+
+      //Retrieve successfully logged in patient info
+      if(result.success){
+        const user = result.user;
+        greeting.innerText = `Administrator: ${user.firstName} ${user.lastName}`
+        const users = result.users;
+        //handle no users
+        if (!users || users.length === 0) {
+            currentUsers.innerHTML = `
+            <p>No Users</p>
+          `;
+          return;
+        }
+        //handle a list of appointments
+        currentUsers.innerHTML = users.filter(user => {
+          const userID = user.userID;
+          const userName = `${user.firstName} ${user.lastName}`.toLowerCase();
+          const userRole = user.roleName;
+
+          return (
+            params.size === 0 ||
+            (!searchName || userName.includes(searchName.toLowerCase())) &&
+            (!searchID || searchID == userID) &&
+            (!searchRole || searchRole == userRole)
+          );
+        }).map(user => {
+          return `
+            <section class="user-card">
+              <div>
+                <strong>User ID: ${user.userID}</strong>
+                <ul class="left-align">
+                  <li>Full Name: ${user.firstName} ${user.lastName}</li>
+                  <li>Role: ${user.roleName}</li>
+                  <li>Status: ${user.isActive == 1 ? "Active" : "Inactive"}
+                </ul>
+              </div>
+              <button onclick="window.location.href='/admins/users/details?ID=${user.userID}'">
+                Edit User
+              </button>
+            </section>
+          `;
+        }).join('');
+
+      } else{
+        feedback.innerText = "Could not get user data."
+      }
+    }
+
+    loadUsers();
+  </script>
+</body>
+</html>

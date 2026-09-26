@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CareConnectLite</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+
+<body>
+  <header>
+    <nav>
+        <a href="index.html">CareConnectLite</a>
+        <ul>
+          <li><a href="/admins/daily">Today's Appointments</a></li>
+          <li><a href="/admins/appointments">All Appointments</a></li>
+          <li><a href="/admins/users">View Users</a></li>
+            <li><a id="logout">Log Out</a></li>
+        </ul>
+    </nav>
+  </header>
+  <h1>Administrator: View Appointment Details</h1>
+  <div id="feedback"></div>
+
+  <!--APPOINTMENT DETAILS-->
+  <main class="appointment-details">
+    <div id="appointment-details"></div>
+
+    <!--MODAL FORM STATUS UPDATES-->
+    <dialog id="statusModal">
+        <form action="/admins/appointments/updateStatus" method="POST" id="statusForm">
+          <h3>Update Appointment Status</h3>
+          
+          <label for="appointmentStatus">Appointment Status:</label>
+          <select type="text" id="appointmentStatus" name="appointmentStatus" required>
+            <option value="Available">Available</option>
+            <option value="Booked">Booked</option>
+            <option value="Confirmed">Confirmed</option>
+            <option value="Checked in">Checked in</option>
+            <option value="Completed">Completed</option>
+            <option value="Cancelled">Cancelled</option>
+            <option value="No Show">No Show</option>
+          </select>
+          
+          <div class="modal-actions">
+            <button type="button" id="closeStatusModalBtn">Cancel</button>
+            <button type="submit">Submit</button>
+          </div>
+          <input type="hidden" name="ID" id="statusAppointmentID">
+        </form>
+      </dialog>
+
+      <!--MODAL FORM PROVIDER UPDATES-->
+    <dialog id="assignModal">
+      <form action="/admins/appointments/assign" method="POST" id="assignForm">
+        <h3>Update Appointment Status</h3>
+        
+        <label for="assignedProvider">Assigned Provider:</label>
+        <select type="text" id="assignedProvider" name="assignedProvider" required>
+        </select>
+        
+        <div class="modal-actions">
+          <button type="button" id="closeAssignModalBtn">Cancel</button>
+          <button type="submit">Submit</button>
+        </div>
+        <input type="hidden" name="ID" id="assignAppointmentID">
+      </form>
+    </dialog>
+
+      <!--MODAL FORM FOR LOGOUT-->
+      <dialog id="logoutModal">
+        <form action="/logout" method="POST" id="logoutForm">
+          <h3>Are You Sure You Want Log Out?</h3>
+          <div class="modal-actions">
+            <button type="button" id="closeModalBtn">Cancel</button>
+            <button type="submit">Yes, Log out</button>
+          </div>
+        </form>
+      </dialog>
+
+  </main>
+
+  <!--FOOTER-->
+  <footer>
+    <p>&copy; 2026 CareConnectLite</p>
+  </footer>
+
+  <script>
+    //get parameters
+    const params = new URLSearchParams(window.location.search);
+    const update = params.get("update");
+
+    //get feedback from responses
+    const feedback = document.getElementById("feedback");
+    if(update == "false"){
+      feedback.innerHTML = "Status failed to update."
+    } 
+    else if(update == "true") feedback.innerHTML = "Status updated Successfully."
+
+    //MODAL FORM FOR LOG OUT
+    const logoutModal = document.getElementById('logoutModal');
+    const logoutBtn = document.getElementById('logout');
+    const logoutClose = document.getElementById('closeModalBtn');
+    // Open the modal
+    logoutBtn.addEventListener('click', () => {
+      logoutModal.showModal();
+    });
+    // Close the modal manually with cancel button
+    logoutClose.addEventListener('click', () => {
+      logoutModal.close(); 
+    });
+    
+    //SEND CONFIRMATION
+    async function sendConfirmation(ID){
+      const res = await fetch("/admins/appointments/requestConfirmation", {
+        method: "POST",
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({'ID': ID})
+      });
+      const result = await res.json();
+      if(result.success){
+        alert(`Confirmation Requested for appointment ID: ${ID}`);
+        window.location.reload();
+      } else {
+        feedback.innerHTML = "Failed to request confirmation."
+      }
+    }
+
+
+    //GET APPOINTMENT DETAILS
+    //get ID search parameters
+    const appointmentID = params.get("ID");
+
+    async function loadAppointmentDetails(){
+      const res = await fetch(`/admins/appointments/details/search?ID=${appointmentID}`);
+      const result = await res.json();
+      const currentAppointment = document.getElementById("appointment-details")
+      
+      //Retrieve successfully logged in patient info
+      if(result.success){
+        const user = result.user;
+        const appointment = result.appointment;
+        const providers = result.providers;
+        //handle no appointments
+        if (!appointment || appointment.length === 0) {
+            currentAppointment.innerHTML = `
+            <p>No Appointment Details Found.</p>
+            <a href="/admins/appointments">Search All Appointments</a>
+          `;
+          return;
+        }
+        //handle a list of appointments
+        const intakeID = appointment.intake ? appointment.intake.formID : "none"
+        const [date, time] = appointment.datetime.split(' ');
+        currentAppointment.innerHTML = `
+            <section class="appointment-details-card">
+              <div>
+                Appointment # ${appointment.appointmentID}: <strong>${appointment.currentStatus}</strong>
+                <ul class="left-align">
+                  <li>Provider: <u>${appointment.providerFirstName} ${appointment.providerLastName}</u></li>
+                  <li>Appointment Type: ${appointment.appointmentType || 'Not selected yet'}</li>
+                  <li>Date: ${date}</li>
+                  <li>Time: ${time}</li>
+                  <li>Patient: ${appointment.patientFirstName} ${appointment.patientLastName}</li>
+                </ul>
+              </div>
+              <div class="appointment-details-options">
+                <button id="confirmationRequest" onclick="sendConfirmation(${appointment.appointmentID})">Request Confirmation</button>
+                <button id="updateStatus">Update Appointment Status</button>
+                <button id="assignBtn">Assign Provider</button>
+                <button id="viewIntakeBtn" onclick="window.location.href='/admins/intake?ID=${intakeID}'">View Intake</button>
+              </div>
+            </section>
+          `;
+
+        //check appointment information to enable options
+        const confirmationBtn = document.getElementById('confirmationRequest');
+        if(appointment.confirmationRequested == 1 || (appointment.confirmationRequested == 0 && appointment.currentStatus != "Booked")) confirmationBtn.disabled = true;
+        const viewIntakeBtn = document.getElementById("viewIntakeBtn");
+        if(appointment.intake == undefined){
+          viewIntakeBtn.disabled = true;
+          viewIntakeBtn.innerText = "Intake not Submitted";
+        }
+        const assignBtn = document.getElementById("assignBtn");
+        if(appointment.providerID) assignBtn.innerText = "Update Provider";
+
+        //MODAL FOR STATUS UPDATE
+        const statusModal = document.getElementById('statusModal');
+        const openBtn = document.getElementById('updateStatus');
+        const closeStatusBtn = document.getElementById('closeStatusModalBtn');
+        const statusForm = document.getElementById('statusForm');
+        const statusFormID = document.getElementById('statusAppointmentID');
+        
+        //Set appointment ID for status updates
+        statusFormID.value = appointmentID;
+
+        // Open the modal
+        openBtn.addEventListener('click', () => {
+          statusModal.showModal();
+        });
+
+        // Close the modal manually with cancel button
+        closeStatusBtn.addEventListener('click', () => {
+          statusModal.close(); 
+        });
+
+        statusForm.addEventListener('submit', (event) => {
+            //get the status value that I could use to make the update
+            const status = document.getElementById('appointmentStatus').value;
+            alert("Appointment Status update to: " + status);
+        });
+
+        //MODAL FOR ASSIGNED PROVIDER UPDATE
+        const assignModal = document.getElementById('assignModal');
+        const closeAssignModalBtn = document.getElementById('closeStatusModalBtn');
+        const assignForm = document.getElementById('assignForm');
+        const assignAppointmentID = document.getElementById('assignAppointmentID');
+        
+        //Set appointment ID for status updates
+        assignAppointmentID.value = appointmentID;
+        //Add Provider list
+        const assignedProvider = document.getElementById("assignedProvider");
+        assignedProvider.innerHTML = providers.map(provider =>{
+          `<option value="${provider.userID}">${provider.firstName} ${provider.lastName}</option>`
+        }).join(" ");
+
+        // Open the modal
+        assignBtn.addEventListener('click', () => {
+          assignModal.showModal();
+        });
+
+        // Close the modal manually with cancel button
+        closeAssignModalBtn.addEventListener('click', () => {
+          assignModal.close(); 
+        });
+
+        assignForm.addEventListener('submit', (event) => {
+            //get the status value that I could use to make the update
+            const status = document.getElementById('appointmentStatus').value;
+            alert("Appointment Status update to: " + status);
+        });
+
+      }
+    }
+
+    loadAppointmentDetails();
+
+  </script>
+</body>
+</html>
