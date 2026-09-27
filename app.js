@@ -9,7 +9,7 @@ const userModel = require('./models/userModel');
 const roleModel = require('./models/roleModel');
 const appointmentStatusModel = require('./models/appointmentStatusModel');
 const intakeModel = require('./models/intakeModel');
-const {getDate, getNextWeekday} = require('./function')
+const {getDate, validatePassword} = require('./function')
 
 
 //settings for the express server
@@ -108,6 +108,9 @@ app.post('/signup', async (req, res) => {
     const existingUser = await userModel.findUserByEmail(email);
     if (existingUser) {
       return res.redirect("/signup?error=user")
+    }
+    if(validatePassword(password)){
+        res.redirect("/signup?error=pass")
     }
     const passwordHash = await bcrypt.hash(password, 12);
     await userModel.createUser({email, passwordHash, firstName, lastName, roleID:1});
@@ -229,16 +232,15 @@ app.get("/patients/schedule", (req, res) =>{
 app.get("/patients/schedule/search", (req, res) =>{
     try{
         const user = req.session.user;
-        const appointments = appointmentModel.findAppointments({after: getDate()});
-        const availableAppointments = [];
+        const date = getDate().split(' ')[0];
+        const appointments = appointmentModel.findAppointments({after: date});
         appointments.forEach(appointment =>{
             const currentStatus = appointmentStatusModel.findCurrentStatusByAppointmentId(appointment.appointmentID);
             appointment.currentStatus = currentStatus.status;
-            if(appointment.currentStatus == "Available") availableAppointments.push(appointment);
         });
         res.json({
             success: true,
-            availableAppointments,
+            appointments,
             user
         });
     }
@@ -249,30 +251,51 @@ app.get("/patients/schedule/search", (req, res) =>{
         });
     }
 });
-app.post("/patients/appointments/book", (req, res) =>{
-    const appointmentID = req.body.appointmentID;
-    const userID = req.body.userID;
-
+app.post("/patients/appointments/book", async (req, res) =>{
+    const data = req.body;
+    const appointmentID = data.ID;
+    const userID = req.session.user.userID;
+    const appointmentType = data.appointmentType;
     try{
-        const appointment = appointmentModel.findAppointmentsById(appointmentID);
-        const currentStatus = appointmentStatusModel.findCurrentStatusByAppointmentId(appointmentID);
-        const user = userModel.findUserById(userID);
+        const appointment = await appointmentModel.findAppointmentsById(appointmentID);
+        const currentStatus = await appointmentStatusModel.findCurrentStatusByAppointmentId(appointmentID);
+        const user = await userModel.findUserById(userID);
         const patientStatus = user.isActive;
-        if(currentStatus.status == "Available" && !appointment.patientID && patientStatus == 1){
-            const changes = appointmentModel.assignPatient(userID, appointmentID);
+        if(currentStatus.status == "Available" && patientStatus == 1){
+            console.log({
+                appointmentID,
+                userID,
+                appointmentType,
+                currentStatus: currentStatus.status,
+                appointmentPatientID: appointment.patientID,
+                patientStatus
+              });
+            const changes = appointmentModel.assignPatient({patientID: userID, appointmentID: appointmentID, appointmentType: appointmentType});
             if(changes > 0){
+                const newStatus = appointmentStatusModel.createAppointmentStatus({appointmentID: appointmentID, status: "Booked", datetime: getDate()});
                 res.json({
                     success: true,
                     message: "Appointment successfully booked."
                 });
             }
+            else{
+                res.json({
+                    success: false,
+                    message: "Failed to book appointment. No changes were made."
+                })
+            }
+        } else {
+            res.json({
+                success: false,
+                message: "Failed to book appointment."
+            })
         }
 
     } catch(err){
         console.log(err);
         res.json({
-            success: true,
-            message: "Appointment successfully booked."
+            success: false,
+            message: "Failed to book appointment."
         });
     }
 });
@@ -564,7 +587,7 @@ app.post("/providers/appointments/assign", (req, res) =>{
     const appointmentID = req.body.ID;
     try{
         const appointment = appointmentModel.findAppointmentsById(appointmentID);
-        const conflicts = appointmentModel.findAppointmentsByProvider(providerID, appointment.datetime);
+        const conflicts = appointmentModel.findAppointmentsByProvider({providerID: providerID, datetime: appointment.datetime});
         if(conflicts){
             res.redirect(`/providers/appointments/details?ID=${appointmentID}&conflict=true`);
         }
@@ -824,6 +847,48 @@ app.post("/admins/users/role/update", (req, res) =>{
     }
 
 });
+app.get("/admins/clinic", (req, res) =>{
+    res.sendFile(path.join(__dirname, "pages/admins/admins-clinic.html"));
+});
+app.post('/admins/users/create', async (req, res) => {
+    const { email, password, firstName, lastName, roleID} = req.body;
+    try{
+        const existingUser = await userModel.findUserByEmail(email);
+        if (existingUser) {
+            res.json({
+                success: false,
+                message: "User with email already exists"
+            });
+        }
+        if(validatePassword(password)){
+            res.json({
+                success: false,
+                message: "Password does not meet requirements."
+            })
+        }
+        const passwordHash = await bcrypt.hash(password, 12);
+        const newUserID = await userModel.createUser({email, passwordHash, firstName, lastName, roleID: Number(roleID)});
+        if(newUserID) res.json({success: true});
+        } catch (err){
+            console.log(err);
+            res.json({
+                success: false,
+                message: "Failed to create user."
+            });
+        }
+    });
+app.post('/admins/appointments/create', async (req, res) => {
+    const {days} = req.body;
+    try{
+        const createdCount = appointmentModel.createAvailableAppointmentsForDays(days);
+        if(createdCount > 0){
+            res.json({success: true});
+        }
+        } catch (err){
+            console.log(err);
+            res.json({success: false});
+        }
+    });
 
 
 

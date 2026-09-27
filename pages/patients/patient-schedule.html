@@ -35,6 +35,23 @@
     </dialog>
   </main>
 
+  <!--MODAL FORM FOR BOOKING-->
+  <dialog id="bookingModal">
+    <form action="/patients/appointments/book" method="POST" id="bookingForm">
+      <h3>Select Appointment Type</h3>
+      <select name="appointmentType" id="appointmentType" required>
+        <option value="Virtual">Virtual</option>
+        <option value="In-person">In-person</option>
+      </select>
+      <input type="hidden" name="ID" id="appointmentID">
+      <div class="modal-actions">
+        <button type="button" id="closeBookingModalBtn">Cancel</button>
+        <button type="submit">Book Appointment</button>
+      </div>
+    </form>
+  </dialog>
+</main>
+
   <!--FOOTER-->
   <footer><p>&copy; 2026 CareConnectLite</p></footer>
   <script>
@@ -54,6 +71,18 @@
     modal.close(); 
     });
 
+    //MODAL FORM FOR BOOKING
+    const bookingModal = document.getElementById('bookingModal');
+    const closeBookingBtn = document.getElementById(`closeBookingModalBtn`);
+    const bookingForm = document.getElementById("bookingForm");
+    const bookingID = document.getElementById("appointmentID");
+    bookingForm.addEventListener("submit", async e=>{
+      e.preventDefault();
+      await book(bookingID.value);
+    });
+    closeBookingBtn.addEventListener("click", () => {
+      bookingModal.close();
+    });
 
     //get parameters
     const params = new URLSearchParams(window.location.search);
@@ -65,7 +94,7 @@
       const appointmentSection = document.getElementById("available-appointments");
 
       if(result.success){
-        const appointments = result.availableAppointments;
+        const appointments = result.appointments;
         const user = result.user;
         //handle no appointments
         if (!appointments || appointments.length === 0) {
@@ -75,20 +104,56 @@
           return;
         }
         //handle a list of appointments
-        appointmentSection.innerHTML = appointments.map(appointment =>{
-          const [date, time] = appt.datetime.split(' ');
+
+        //hashmap with array of appointments for each date
+        const appointmentsByDate = {};
+        appointments.forEach(appointment => {
+          const [date] = appointment.datetime.split(' ');
+          if (!appointmentsByDate[date]) appointmentsByDate[date] = [];
+          appointmentsByDate[date].push(appointment);
+        });
+
+        //Group appointments by date
+        appointmentSection.innerHTML = Object.keys(appointmentsByDate).map(date => {
+          const formatDate = new Date(`${date}T00:00:00`);
+          const weekday = formatDate.toLocaleDateString('en-US', { weekday: 'long' });
+          //Generate HTML of appointment cards within a date
+          const appointmentCards = appointmentsByDate[date].map(appointment => {
+            const [date, time] = appointment.datetime.split(' ');
+            if(appointment.currentStatus != "Available"){
+              return `
+                <section class="booking-card">
+                  <div>
+                    <p>Time: ${time}</p>
+                  </div>
+                  <button type="button" onclick="" disabled>
+                    Unavailable
+                  </button>
+                </section>
+              `;
+            } else{
+              return `
+              <section class="booking-card">
+                <div>
+                  <p>Time: ${time}</p>
+                </div>
+                <button id="bookingBtn" type="button" onclick="setBookingForm(${appointment.appointmentID})">
+                  Book Appointment
+                </button>
+              </section>
+            `;
+            }
+            
+          }).join('');
+
+          //Render all HTML by date
           return `
-          <section class="appointment-card">
-              <div>
-                <p><strong>Date: </strong>${date}</p>
-                <p>Time: ${time}</p>
-              </div>
-              <button onclick="book(${user.userID, appointment.appointmentID})">
-                Book Appointment
-              </button>
-            </section>
-          `
-        })
+            <div class="appointment-day">
+              <h3>${weekday}, ${date}</h3>
+              ${appointmentCards}
+            </div>
+          `;
+        }).join('');
         
       } else {
         feedback.innerText = "Failed to get appointments."
@@ -96,24 +161,30 @@
     }
 
     //BOOK APPOINTMENTS
-    async function book(userID, appointmentID){
+    async function book(appointmentID){
+      const bookingFormData = new FormData(bookingForm);
+      const bookingData = Object.fromEntries(bookingFormData);
       const res = await fetch("/patients/appointments/book", {
         method: "POST",
         headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({
-          'userID': userID,
-          'appointmentID': appointmentID
-        })
+        body: JSON.stringify(bookingData)
       });
       const result = await res.json();
       if(result.success){
         alert(`Successfully booked appointment #: ${appointmentID}`);
-        window.location.href("/patients/account");
+        window.location.href = "/patients/account";
       } else {
         alert("Failed to book appointment.");
         window.location.reload();
       }
 
+    }
+
+    function setBookingForm(appointmentID){
+      // Open the modal
+      bookingModal.showModal();
+      //Set ID
+      bookingID.value = appointmentID;
     }
 
     getAvailableAppointments();

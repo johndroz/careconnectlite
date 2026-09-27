@@ -2,7 +2,7 @@ const db = require('../db/database');
 const appointmentStausModel = require('../models/appointmentStatusModel');
 const {getDate, getNextWeekday} = require('../function');
 
-function createAppointment({datetime}) {
+function createAppointment(datetime) {
   const stmt = db.prepare(`
     INSERT INTO Appointments (datetime)
     VALUES (?)
@@ -47,11 +47,11 @@ function findAppointmentsByPatient(patientID) {
     return stmt.all(date);
   }
 
-  function findAppointments({before = "9999-99-99 99:99:99", after = "0000-00-00 00:00:00"} = {}){
+  function findAppointments({before = "9999-99-99", after = "0000-00-00"} = {}){
     const stmt = db.prepare(`
       SELECT * 
       FROM Appointments
-      WHERE datetime < ? AND datetime > ?
+      WHERE datetime < CONCAT(?, ' 99:99:99') AND datetime > CONCAT(?, ' 00:00:00')
     `);
     return stmt.all(before, after);
   }
@@ -100,14 +100,15 @@ function findAppointmentsByPatient(patientID) {
     return result.changes;
   }
 
-  function assignPatient({patientID, appointmentID}){
+  function assignPatient({patientID, appointmentID, appointmentType = null}){
     const stmt = db.prepare(`
       UPDATE Appointments
-      SET patientID = ?
-      WHERE appointmentID = ?
+      SET patientID = ?, 
+      appointmentType = ?
+      WHERE appointmentID = ? AND patientID IS NULL
     `);
 
-    const result = stmt.run(patientID, appointmentID);
+    const result = stmt.run(patientID, appointmentType, appointmentID);
     return result.changes;
   }
 
@@ -162,8 +163,7 @@ function findAppointmentsByPatient(patientID) {
         for (const slotTime of slotTimes) {
           const appointmentDateTime = `${formattedDate} ${slotTime}`;
           const appointmentID = createAppointment(appointmentDateTime);
-          insertStatus.run(appointmentID, statusDateTime);
-          appointmentStausModel.createAppointmentStatus(appointmentID, "Available", statusDateTime);
+          appointmentStausModel.createAppointmentStatus({appointmentID: appointmentID, status: "Available", datetime: statusDateTime});
           createdCount++;
         }
       }

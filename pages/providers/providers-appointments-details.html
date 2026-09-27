@@ -213,7 +213,7 @@
 
         //MODAL FOR ASSIGNED PROVIDER UPDATE
         const assignModal = document.getElementById('assignModal');
-        const closeAssignModalBtn = document.getElementById('closeStatusModalBtn');
+        const closeAssignModalBtn = document.getElementById('closeAssignModalBtn');
         const assignForm = document.getElementById('assignForm');
         const assignAppointmentID = document.getElementById('assignAppointmentID');
         
@@ -222,7 +222,7 @@
         //Add Provider list
         const assignedProvider = document.getElementById("assignedProvider");
         assignedProvider.innerHTML = providers.map(provider =>{
-          `<option value="${provider.userID}">${provider.firstName} ${provider.lastName}</option>`
+          return `<option value="${provider.userID}">${provider.firstName} ${provider.lastName}</option>`;
         }).join(" ");
 
         // Open the modal
@@ -237,8 +237,7 @@
 
         assignForm.addEventListener('submit', (event) => {
             //get the status value that I could use to make the update
-            const status = document.getElementById('appointmentStatus').value;
-            alert("Appointment Status update to: " + status);
+            alert("Provider updated");
         });
 
       }

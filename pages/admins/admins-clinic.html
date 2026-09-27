@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CareConnectLite</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+
+<body>
+  <header>
+    <nav>
+        <a href="/">CareConnectLite</a>
+        <ul>
+            <li><a href="/admins/daily">Today's Appointments</a></li>
+            <li><a href="/admins/appointments">All Appointments</a></li>
+            <li><a href="/admins/users">View Users</a></li>
+            <li><a id="logout">Log Out</a></li>
+        </ul>
+    </nav>
+  </header>
+  <main class="appointments-section">
+    <h1 id="greeting"></h1>
+    <div id="feedback"></div>
+    
+    <!--MANAGE CLINIC-->
+    <div id="manage-clinic">
+        <h2>Manage Clinic</h2>
+        <div class="manage-clinic-options">
+            <button id="create-user">Create User</button>
+            <button id="create-appointment">Create Appointments</button>
+        </div>
+    </div>
+
+    <!--MODAL FORM FOR LOGOUT-->
+    <dialog id="inputModal">
+      <form action="/logout" method="POST" id="modalForm">
+        <h3>Are You Sure You Want Log Out?</h3>
+        <div class="modal-actions">
+          <button type="button" id="closeModalBtn">Cancel</button>
+          <button type="submit">Yes, Log out</button>
+        </div>
+      </form>
+    </dialog>
+
+    <!--MODAL FORM FOR USER CREATION-->
+    <dialog id="userModal">
+        <form action="/admins/users/create" method="POST" id="userForm">
+          <h3>Create a New User</h3>
+          <div class="form-row">
+            <label for="email">Email: </label>
+            <input type="email" id="email" name="email" placeholder="user@example.com" required>
+          </div>
+          <div class="form-row">
+            <label for="password">Password: </label>
+            <input type="password" id="password" name="password" placeholder="Password here" required>
+          </div>
+          <i class="left-align">
+            Password must contain:
+            <ul>
+                <li>Letters</li>
+                <li>Numbers</li>
+                <li>At least 8 characters</li>
+                <li>Special character: `! @ # $ % ^ & * ( ) _ + - = { } | ; : ' " , . < > / ? ~ `</li>
+            </ul>
+          </i>
+          <div class="form-row">
+            <label for="firstName">First Name: </label>
+            <input type="text" id="firstName" name="firstName" placeholder="First Name" required>
+          </div>
+          <div class="form-row">
+            <label for="lastName">Last Name: </label>
+            <input type="text" id="lastName" name="lastName" placeholder="Last Name" required>
+          </div>
+          <div class="form-row">
+            <label for="roleID">Role: </label>
+            <select type="text" id="roleID" name="roleID" required>
+                <option value="1">Patient</option>
+                <option value="2">Staff</option>
+                <option value="3">Provider</option>
+                <option value="4">Clinic Administrator</option>
+            </select>
+          </div>
+          <div id="signup-error"></div>
+          <div class="modal-actions">
+            <button type="button" id="closeUserModalBtn">Cancel</button>
+            <button type="submit">Sumbit</button>
+          </div>
+        </form>
+      </dialog>
+
+      <!--MODAL FORM FOR APPOINTMENT CREATION-->
+    <dialog id="appointmentModal">
+        <form action="/admins/appointments/create" method="POST" id="appointmentForm">
+          <h3>Create New Appointments</h3>
+          <div class="form-row">
+            <label for="days"># of Days: </label>
+            <input type="number" id="days" name="days" placeholder="Enter number of days" required>
+          </div>
+          <div class="modal-actions">
+            <button type="button" id="closeAppointmentModalBtn">Cancel</button>
+            <button type="submit">Create Appointments</button>
+          </div>
+        </form>
+      </dialog>
+
+  </main>
+
+  <!--FOOTER-->
+  <footer>
+    <p>&copy; 2026 CareConnectLite</p>
+  </footer>
+  <script>
+    //MODAL FORM FOR LOG OUT
+    const modal = document.getElementById('inputModal');
+    const logoutBtn = document.getElementById('logout');
+    const closeBtn = document.getElementById('closeModalBtn');
+    // Open the modal
+    logoutBtn.addEventListener('click', () => {
+    modal.showModal();
+    });
+    // Close the modal manually with cancel button
+    closeBtn.addEventListener('click', () => {
+    modal.close(); 
+    });
+
+    //MODAL FORM FOR USER CREATION
+    const userModal = document.getElementById('userModal');
+    const userBtn = document.getElementById('create-user');
+    const userCloseBtn = document.getElementById('closeUserModalBtn');
+    const userForm = document.getElementById('userForm');
+    // Open the modal
+    userBtn.addEventListener('click', () => {
+        userModal.showModal();
+    });
+    // Close the modal manually with cancel button
+    userCloseBtn.addEventListener('click', () => {
+        userModal.close(); 
+    });
+    userForm.addEventListener("submit", async (e)=>{
+        e.preventDefault();
+        userFormData = new FormData(userForm);
+        userData = Object.fromEntries(userFormData);
+        const res = await fetch("/admins/users/create", {
+                method: "POST",
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(userData)
+            });
+            const result = await res.json();
+            if(result.success){
+                alert("User created successfully.");
+                window.location.reload();
+            } else{
+                feedback.innerText = result.message;
+            }
+    });
+    //Password validation
+    const errorField = document.getElementById("signup-error");
+    const passwordField = document.getElementById("password");
+
+    function validatePass(text){
+      let errorText = "";
+      if(text.length < 8) {
+          errorText += "At least 8 characters required for password.\n"
+        }
+        if(!/[a-z]/i.test(text) || !/[0-9]/.test(text)){
+          errorText += "Both letters and numbers must be included in password.\n"
+        }
+        if(!/[`!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?~]/.test(text)){
+          errorText += "Special character required in password.\n"
+        }
+        errorField.innerText = errorText;
+        if(errorText != "" && !passwordField.classList.contains("red-border")){
+          passwordField.classList.add("red-border");
+        } else passwordField.classList.remove("red-border");
+    }
+
+    passwordField.addEventListener("blur", e =>{
+      validatePass(passwordField.value);
+      passwordField.addEventListener("keyup", event=>{
+        let pass = passwordField.value;
+        validatePass(pass);
+      });
+    });
+
+    //MODAL FORM FOR APPOINTMENT CREATION
+    const appointmentModal = document.getElementById('appointmentModal');
+    const appointmentBtn = document.getElementById('create-appointment');
+    const appointmentCloseBtn = document.getElementById('closeAppointmentModalBtn');
+    const appointmentForm = document.getElementById('appointmentForm');
+    // Open the modal
+    appointmentBtn.addEventListener('click', () => {
+        appointmentModal.showModal();
+    });
+    // Close the modal manually with cancel button
+    appointmentCloseBtn.addEventListener('click', () => {
+        appointmentModal.close(); 
+    });
+    appointmentForm.addEventListener("submit", async (e)=>{
+        e.preventDefault();
+        appointmentFormData = new FormData(appointmentForm);
+        appointmentData = Object.fromEntries(appointmentFormData);
+        const res = await fetch("/admins/appointments/create", {
+                method: "POST",
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(appointmentData)
+            })
+            const result = await res.json();
+            if(result.success){
+                alert("Appointments created successfully.");
+                window.location.reload();
+            } else{
+                feedback.innerText = "Failed to create appointments."
+            }
+    });
+
+    
+
+  </script>
+</body>
+
+</html>

@@ -197,6 +197,23 @@ nav {
   align-self: start;
 }
 
+#available-appointments {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 1fr 1fr;
+}
+
+.appointment-day {
+  margin: 5px;
+  
+}
+
+.booking-card {
+  background-color: #f1f4fa;
+  padding: 5px;
+  margin: 5px;
+  justify-self: center;
+}
+
 /*STAFF APPOINTMENT DETAILS*/
 .appointment-details {
     max-width: 600px;
@@ -317,4 +334,34 @@ section.user-details-card {
   margin: 5px auto;
   width: 90%;
   height: 2rem;
+}
+
+/**/
+
+#manage-clinic {
+  display: grid;
+}
+
+.manage-clinic-options {
+  display: grid;
+}
+
+.manage-clinic-options button {
+  height: 3rem;
+  margin: 10px;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  margin: 5px;
+}
+
+.form-row label {
+  justify-self: start;
+}
+
+.form-row button {
+  width: 100px;
+  justify-self: end;
 }

@@ -22,7 +22,22 @@ function getNextWeekday(date) {
     return nextDate;
   }
 
+  function validatePassword(text){
+    let errorText = "";
+    if(text.length < 8) {
+        errorText += "At least 8 characters required for password.\n"
+      }
+      if(!/[a-z]/i.test(text) || !/[0-9]/.test(text)){
+        errorText += "Both letters and numbers must be included in password.\n"
+      }
+      if(!/[`!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?~]/.test(text)){
+        errorText += "Special character required in password.\n"
+      }
+      return errorText;
+  }
+
 module.exports = {
     getDate,
-    getNextWeekday
+    getNextWeekday,
+    validatePassword
 }

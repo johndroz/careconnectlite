@@ -63,6 +63,9 @@
       errorField.innerText = "This email is already being used for an existing account."
       errorField.classList.add("red-border");
     }
+    if(error == "pass"){
+      errorField.innerText = "The password does not meet the requirements."
+    }
 
     //Password validation
     const passwordField = document.getElementById("password");
