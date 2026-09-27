@@ -38,6 +38,11 @@
         <option value="Provider">Provider</option>
         <option value="Clinic Administrator">Clinic Administrator</option>
       </select>
+      <label for="isActive">User Status</label>
+      <select name="isActive" id="isActive">
+        <option value="1">Active</option>
+        <option value="0">Inactive</option>
+      </select>
       <button type="submit">Search</button>
       <a href="/admins/users">Clear Search</a>
     </form>
@@ -92,6 +97,7 @@
       const searchID = params.get("userID");
       const searchName = params.get("name");
       const searchRole = params.get("role");
+      const searchIsActive = params.get("isActive");
 
       //Retrieve successfully logged in patient info
       if(result.success){
@@ -110,12 +116,14 @@
           const userID = user.userID;
           const userName = `${user.firstName} ${user.lastName}`.toLowerCase();
           const userRole = user.roleName;
+          const userIsActive = user.isActive;
 
           return (
             params.size === 0 ||
             (!searchName || userName.includes(searchName.toLowerCase())) &&
             (!searchID || searchID == userID) &&
-            (!searchRole || searchRole == userRole)
+            (!searchRole || searchRole == userRole) &&
+            (!searchIsActive || searchIsActive == userIsActive)
           );
         }).map(user => {
           return `

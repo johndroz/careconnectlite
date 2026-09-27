@@ -19,7 +19,7 @@ function findUserByEmail(email) {
 
 function findUserById(userID) {
   const stmt = db.prepare(`
-    SELECT userID, email, firstName, lastName, roleID
+    SELECT userID, email, firstName, lastName, roleID, isActive
     FROM Users
     WHERE userID = ?
   `);
@@ -29,7 +29,7 @@ function findUserById(userID) {
 function findUsersByRole(roleName = null) {
   roleName = roleName || null;
   const stmt = db.prepare(`
-    SELECT u.userID, u.email, u.firstName, u.lastName, u.roleID, r.roleName
+    SELECT u.userID, u.email, u.firstName, u.lastName, u.roleID, r.roleName, u.isActive
     FROM Users u JOIN Roles r ON u.roleID = r.roleID
     WHERE (? IS NULL OR r.roleName = ?)
   `);
@@ -62,5 +62,7 @@ module.exports = {
   createUser,
   findUserByEmail,
   findUserById,
-  findUsersByRole
+  findUsersByRole,
+  updateUserRole,
+  updateUserStatus
 };

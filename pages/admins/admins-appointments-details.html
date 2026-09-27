@@ -92,10 +92,11 @@
 
     //get feedback from responses
     const feedback = document.getElementById("feedback");
+    if(conflict == "true") feedback.innerText = "Scheduling conflict with this provider. Choose a different provider."
     if(update == "false"){
-      feedback.innerHTML = "Status failed to update."
+      feedback.innerText = "Update failed."
     } 
-    else if(update == "true") feedback.innerHTML = "Status updated Successfully."
+    else if(update == "true") feedback.innerText = "Updated Successfully."
 
     //MODAL FORM FOR LOG OUT
     const logoutModal = document.getElementById('logoutModal');
@@ -130,6 +131,8 @@
     //GET APPOINTMENT DETAILS
     //get ID search parameters
     const appointmentID = params.get("ID");
+
+    
 
     async function loadAppointmentDetails(){
       const res = await fetch(`/admins/appointments/details/search?ID=${appointmentID}`);

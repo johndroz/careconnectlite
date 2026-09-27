@@ -29,13 +29,13 @@ function findAppointmentsByPatient(patientID) {
     return stmt.all(patientID);
   }
 
-  function findAppointmentsByProvider(providerID) {
+  function findAppointmentsByProvider(providerID, datetime) {
     const stmt = db.prepare(`
       SELECT *
       FROM Appointments
-      WHERE providerID = ?
+      WHERE providerID = ? AND datetime = ?
     `);
-    return stmt.all(providerID);
+    return stmt.all(providerID, datetime);
   }
 
   function findAppointmentsByDate(date){

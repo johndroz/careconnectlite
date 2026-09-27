@@ -30,7 +30,7 @@
     <dialog id="roleModal">
         <form action="/admins/users/role/update" method="POST" id="roleForm">
           <h3>Update User Role</h3>
-          <label for="userRole">userRole:</label>
+          <label for="userRole">Role: </label>
           <select type="text" id="userRole" name="userRole" required>
             <option value="1">Patient</option>
             <option value="2">Staff</option>
@@ -39,20 +39,26 @@
           </select>
           <div class="modal-actions">
             <button type="button" id="closeRoleModalBtn">Cancel</button>
-            <button type="button">Submit</button>
+            <button type="submit">Submit</button>
           </div>
-          <input type="hidden" name="ID" id="userID">
+          <input type="hidden" name="ID" id="roleUserID">
         </form>
       </dialog>
 
-      <!--CONFIRM DELETE USER-->
-      <dialog id="logoutModal">
-        <form action="/admins/users/delete" method="POST" id="logoutForm">
-          <h3>Are You Sure You Want to Delete this User?</h3>
+      <!--MODAL FORM UPDATE USER ISACTIVE-->
+      <dialog id="isActiveModal">
+        <form action="/admins/users/status/update" method="POST" id="isActiveForm">
+          <h3>Update User Status</h3>
+          <label for="userIsActive">Active Status: </label>
+          <select type="text" id="userIsActive" name="userIsActive" required>
+            <option value="1">Active</option>
+            <option value="0">Inactive</option>
+          </select>
           <div class="modal-actions">
-            <button type="button" id="closeDeleteModalBtn">Cancel</button>
-            <button type="button">Yes, Delete User Permanently</button>
+            <button type="button" id="closeisActiveModalBtn">Cancel</button>
+            <button type="submit">Submit</button>
           </div>
+          <input type="hidden" name="ID" id="isActiveUserID">
         </form>
       </dialog>
 
@@ -98,7 +104,7 @@
 
     //GET APPOINTMENT DETAILS
     //get ID search parameters
-    async function loadAppointmentDetails(){
+    async function loadUserDetails(){
       const res = await fetch(`/admins/users/details/search?ID=${userID}`);
       const result = await res.json();
       const currentUser = document.getElementById("user-details")
@@ -118,58 +124,96 @@
         currentUser.innerHTML = `
             <section class="user-details-card">
               <div>
-                User ID: <strong>${user.userID}</strong>
+                <strong>User ID: ${user.userID}</strong>
                 <ul class="left-align">
-                  <li>Provider: <u>${user.firstName} ${user.lastName}</u></li>
+                  <li>Full Name: ${user.firstName} ${user.lastName}</li>
                   <li>Role: ${user.roleName}</li>
+                  <li>Status: ${user.isActive == 1? "Active" : "Inactive"}</li>
                 </ul>
               </div>
               <div class="user-details-options">
-                <button id="updateStatus">Update Appointment Status</button>
-                <button id="assignBtn">Assign Provider</button>
+                <button id="updateRole">Update User Role</button>
+                <button id="isActiveBtn">Update User Status</button>
               </div>
             </section>
           `;
 
         //MODAL FOR ROLE UPDATE
-        const statusModal = document.getElementById('statusModal');
-        const openBtn = document.getElementById('updateStatus');
-        const closeStatusBtn = document.getElementById('closeStatusModalBtn');
-        const statusForm = document.getElementById('statusForm');
-        const statusFormID = document.getElementById('statusAppointmentID');
-        //Set appointment ID for status updates
-        statusFormID.value = appointmentID;
+        const roleModal = document.getElementById('roleModal');
+        const openRoleBtn = document.getElementById('updateRole');
+        const closeRoleBtn = document.getElementById('closeRoleModalBtn');
+        const roleForm = document.getElementById('roleForm');
+        const roleUserID = document.getElementById('roleUserID');
+        //Set user ID for role updates
+        roleUserID.value = userID;
         // Open the modal
-        openBtn.addEventListener('click', () => {
-          statusModal.showModal();
+        openRoleBtn.addEventListener('click', () => {
+          roleModal.showModal();
         });
         // Close the modal manually with cancel button
-        closeStatusBtn.addEventListener('click', () => {
-          statusModal.close(); 
+        closeRoleBtn.addEventListener('click', () => {
+          roleModal.close(); 
         });
-        statusForm.addEventListener('submit', (event) => {
-            //get the status value that I could use to make the update
-            const status = document.getElementById('appointmentStatus').value;
-            alert("Appointment Status update to: " + status);
+        roleForm.addEventListener('submit', async (event) => {
+            //prevent reload
+            event.preventDefault();
+            //update the role data and handle response
+            const roleFormData = new FormData(roleForm);
+            const roleData = Object.fromEntries(roleFormData);
+            const res = await fetch("/admins/users/role/update", {
+                method: "POST",
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({roleData})
+            })
+            const result = await res.json();
+            if(result.success){
+                alert("Updated user's role successfully.");
+                window.location.reload();
+            } else{
+                feedback.innerText = "Failed to update user's role."
+            }
         });
 
-        //MODAL FOR CONFIRM DELETE
-        const logoutModal = document.getElementById('logoutModal');
-        const logoutBtn = document.getElementById('logout');
-        const logoutClose = document.getElementById('closeModalBtn');
+        //MODAL FOR UPDATE ISACTIVE
+        const isActiveModal = document.getElementById('isActiveModal');
+        const isActiveBtn = document.getElementById('isActiveBtn');
+        const isActiveClose = document.getElementById('closeisActiveModalBtn');
+        const isActiveForm = document.getElementById('isActiveForm');
+        const isActiveUserID = document.getElementById('isActiveUserID');
+        //Set user ID for isActive updates
+        isActiveUserID.value = userID;
         // Open the modal
-        logoutBtn.addEventListener('click', () => {
-        logoutModal.showModal();
+        isActiveBtn.addEventListener('click', () => {
+            isActiveModal.showModal();
         });
         // Close the modal manually with cancel button
-        logoutClose.addEventListener('click', () => {
-        logoutModal.close(); 
+        isActiveClose.addEventListener('click', () => {
+            isActiveModal.close(); 
+        });
+        isActiveForm.addEventListener('submit', async (event) => {
+            //prevent reload
+            event.preventDefault();
+            //update status data and handle response
+            const isActiveFormData = new FormData(isActiveForm);
+            const isActiveData = Object.fromEntries(isActiveFormData);
+            const res = await fetch("/admins/users/status/update", {
+                method: "POST",
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({isActiveData})
+            })
+            const result = await res.json();
+            if(result.success){
+                alert("Updated user's status successfully.");
+                window.location.reload();
+            } else{
+                feedback.innerText = "Failed to update user's status."
+            }
         });
 
       }
     }
 
-    loadAppointmentDetails();
+    loadUserDetails();
 
   </script>
 </body>

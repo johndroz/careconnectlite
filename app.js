@@ -256,7 +256,9 @@ app.post("/patients/appointments/book", (req, res) =>{
     try{
         const appointment = appointmentModel.findAppointmentsById(appointmentID);
         const currentStatus = appointmentStatusModel.findCurrentStatusByAppointmentId(appointmentID);
-        if(currentStatus.status == "Available" && !appointment.patientID){
+        const user = userModel.findUserById(userID);
+        const patientStatus = user.isActive;
+        if(currentStatus.status == "Available" && !appointment.patientID && patientStatus == 1){
             const changes = appointmentModel.assignPatient(userID, appointmentID);
             if(changes > 0){
                 res.json({
@@ -489,7 +491,10 @@ app.get("/providers/appointments/details/search", (req, res) =>{
     const provider = userModel.findUserById(appointment.providerID);
     const [date, time] = appointment.datetime.split(' ');
     const intake = intakeModel.findIntakeByAppointment(appointmentID);
-    const providers = userModel.findUsersByRole("Provider");
+    const allProviders = userModel.findUsersByRole("Provider");
+    const providers = allProviders.filter(provider =>{
+        return (provider.isActive == 1)
+    })
 
     appointment.intake = intake;
     appointment.currentStatus = currentStatus.status;
@@ -553,6 +558,25 @@ app.get("/providers/intake/search", (req, res) =>{
         user,
         appointment
     });
+});
+app.post("/providers/appointments/assign", (req, res) =>{
+    const providerID = req.body.assignedProvider;
+    const appointmentID = req.body.ID;
+    try{
+        const appointment = appointmentModel.findAppointmentsById(appointmentID);
+        const conflicts = appointmentModel.findAppointmentsByProvider(providerID, appointment.datetime);
+        if(conflicts){
+            res.redirect(`/providers/appointments/details?ID=${appointmentID}&conflict=true`);
+        }
+        const changes = appointmentModel.assignProvider({providerID: providerID, appointmentID: appointmentID});
+        if(changes > 0){
+            res.redirect(`/providers/appointments/details?ID=${appointmentID}&update=true`);
+        }
+    } catch (err){
+        console.log(err);
+        res.redirect(`/providers/appointments/details?ID=${appointmentID}&update=false`);
+    }
+
 });
 
 
@@ -701,6 +725,25 @@ app.get("/admins/intake/search", (req, res) =>{
         });
     }
 });
+app.post("/admins/appointments/assign", (req, res) =>{
+    const providerID = req.body.assignedProvider;
+    const appointmentID = req.body.ID;
+    try{
+        const appointment = appointmentModel.findAppointmentsById(appointmentID);
+        const conflicts = appointmentModel.findAppointmentsByProvider(providerID, appointment.datetime);
+        if(conflicts){
+            res.redirect(`/admins/appointments/details?ID=${appointmentID}&conflict=true`);
+        }
+        const changes = appointmentModel.assignProvider({providerID: providerID, appointmentID: appointmentID});
+        if(changes > 0){
+            res.redirect(`/admins/appointments/details?ID=${appointmentID}&update=true`);
+        }
+    } catch (err){
+        console.log(err);
+        res.redirect(`/admins/appointments/details?ID=${appointmentID}&update=false`);
+    }
+
+});
 app.get("/admins/users", (req, res) =>{
     res.sendFile(path.join(__dirname, "pages/admins/admins-users.html"));
 });
@@ -729,6 +772,8 @@ app.get("/admins/users/details/search", (req, res) =>{
 
     try{
         user = userModel.findUserById(userID);
+        const role = roleModel.findRole(user.roleID);
+        user.roleName = role.roleName;
         res.json({
             success: true,
             admin,
@@ -741,7 +786,44 @@ app.get("/admins/users/details/search", (req, res) =>{
         });
     }
 });
+app.post("/admins/users/status/update", (req, res) =>{
+    const adminID = req.session.user.userID;
+    const data = req.body.isActiveData;
+    const userID = data.ID;
+    const isActive = data.userIsActive;
+    //check if admin is updating self
+    if(adminID == userID) res.json({success: false});
 
+    try{
+        const changes = userModel.updateUserStatus(userID, isActive);
+        if(changes > 0) {
+            res.json({success: true});
+        }
+    } catch(err){
+        console.log(err);
+        res.json({success: false});
+    }
+
+});
+app.post("/admins/users/role/update", (req, res) =>{
+    const adminID = req.session.user.userID;
+    const data = req.body.roleData;
+    const userID = data.ID;
+    const userRole = Number(data.userRole);
+    //check if admin is updating self
+    if(adminID == userID) res.json({success: false});
+
+    try{
+        const changes = userModel.updateUserRole(userID, userRole);
+        if(changes > 0) {
+            res.json({success: true});
+        }
+    } catch(err){
+        console.log(err);
+        res.json({success: false});
+    }
+
+});
 
 
 

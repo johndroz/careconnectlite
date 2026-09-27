@@ -270,7 +270,7 @@ section.intake-details-card {
 
 .users-section section {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 3fr 2fr;
   align-items: center;
   border: #7f7f7f solid 1px;
   border-radius: 10px;
@@ -282,7 +282,39 @@ section.intake-details-card {
   height: 3rem;
 }
 
-.users-section ul {
+.users-section ul, .user-details-card ul {
   list-style: none;
 }
 
+.users-section ul li, .user-details-card ul li {
+  margin: 10px 0px;
+}
+
+.user-details {
+  max-width: 600px;
+  width: 90%;
+  margin: 80px auto;
+  padding: 32px;
+  text-align: center;
+  display: grid;
+}
+
+section.user-details-card {
+  display: grid;
+  grid-template-columns: 3fr 2fr;
+  align-items: center;
+  border: #7f7f7f solid 1px;
+  border-radius: 10px;
+  padding: 20px;
+  margin: 10px;
+}
+
+.user-details-options {
+  display: grid;
+}
+
+.user-details-options button {
+  margin: 5px auto;
+  width: 90%;
+  height: 2rem;
+}

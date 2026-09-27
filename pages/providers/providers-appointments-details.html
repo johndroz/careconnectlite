@@ -88,13 +88,15 @@
     //get parameters
     const params = new URLSearchParams(window.location.search);
     const update = params.get("update");
+    const conflict = params.get("conflict");
 
     //get feedback from responses
     const feedback = document.getElementById("feedback");
+    if(conflict == "true") feedback.innerText = "Scheduling conflict with this provider. Choose a different provider."
     if(update == "false"){
-      feedback.innerHTML = "Status failed to update."
+      feedback.innerText = "Update failed."
     } 
-    else if(update == "true") feedback.innerHTML = "Status updated Successfully."
+    else if(update == "true") feedback.innerText = "Updated Successfully."
 
     //MODAL FORM FOR LOG OUT
     const logoutModal = document.getElementById('logoutModal');
