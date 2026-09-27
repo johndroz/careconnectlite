@@ -546,6 +546,24 @@ app.get("/providers/appointments/details/search", (req, res) =>{
     });
 
 });
+app.post("/providers/appointments/requestConfirmation", (req, res) =>{
+    const appointmentID = req.body.ID;
+    const appointment = appointmentModel.findAppointmentsById(appointmentID);
+    const data = {success: false, message: "Unable to send confirmation"};
+    if(appointment.confirmationRequested == 0){
+        try{
+            const changes = appointmentModel.sendConfirmation(appointmentID);
+            if(changes > 0){
+                data.success = true;
+                data.message = "Confirmation request has been sent."
+            }
+        } catch(err){
+            console.log(err)
+        }
+        
+    }
+    res.json(data);
+});
 app.post("/providers/appointments/updateStatus", (req, res) =>{
     data = {success: false, message: "Unable to update status."}
     const statusForm = req.body;
@@ -587,17 +605,17 @@ app.post("/providers/appointments/assign", (req, res) =>{
     const appointmentID = req.body.ID;
     try{
         const appointment = appointmentModel.findAppointmentsById(appointmentID);
-        const conflicts = appointmentModel.findAppointmentsByProvider({providerID: providerID, datetime: appointment.datetime});
-        if(conflicts){
-            res.redirect(`/providers/appointments/details?ID=${appointmentID}&conflict=true`);
+        const conflicts = appointmentModel.findAppointmentsByProvider(providerID, appointment.datetime);
+        if(conflicts.length > 0){
+            return res.redirect(`/providers/appointments/details?ID=${appointmentID}&conflict=true`);
         }
         const changes = appointmentModel.assignProvider({providerID: providerID, appointmentID: appointmentID});
         if(changes > 0){
-            res.redirect(`/providers/appointments/details?ID=${appointmentID}&update=true`);
+            return res.redirect(`/providers/appointments/details?ID=${appointmentID}&update=true`);
         }
     } catch (err){
         console.log(err);
-        res.redirect(`/providers/appointments/details?ID=${appointmentID}&update=false`);
+        return res.redirect(`/providers/appointments/details?ID=${appointmentID}&update=false`);
     }
 
 });
@@ -704,6 +722,24 @@ app.get("/admins/admins/details/search", (req, res) =>{
         providers
     });
 
+});
+app.post("/admins/appointments/requestConfirmation", (req, res) =>{
+    const appointmentID = req.body.ID;
+    const appointment = appointmentModel.findAppointmentsById(appointmentID);
+    const data = {success: false, message: "Unable to send confirmation"};
+    if(appointment.confirmationRequested == 0){
+        try{
+            const changes = appointmentModel.sendConfirmation(appointmentID);
+            if(changes > 0){
+                data.success = true;
+                data.message = "Confirmation request has been sent."
+            }
+        } catch(err){
+            console.log(err)
+        }
+        
+    }
+    res.json(data);
 });
 app.post("/admins/admins/updateStatus", (req, res) =>{
     data = {success: false, message: "Unable to update status."}
