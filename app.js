@@ -261,15 +261,7 @@ app.post("/patients/appointments/book", async (req, res) =>{
         const currentStatus = await appointmentStatusModel.findCurrentStatusByAppointmentId(appointmentID);
         const user = await userModel.findUserById(userID);
         const patientStatus = user.isActive;
-        if(currentStatus.status == "Available" && patientStatus == 1){
-            console.log({
-                appointmentID,
-                userID,
-                appointmentType,
-                currentStatus: currentStatus.status,
-                appointmentPatientID: appointment.patientID,
-                patientStatus
-              });
+        if(currentStatus.status == "Available" && patientStatus == 1 && getDate < appointment.datetime){
             const changes = appointmentModel.assignPatient({patientID: userID, appointmentID: appointmentID, appointmentType: appointmentType});
             if(changes > 0){
                 const newStatus = appointmentStatusModel.createAppointmentStatus({appointmentID: appointmentID, status: "Booked", datetime: getDate()});
