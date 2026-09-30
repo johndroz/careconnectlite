@@ -198,8 +198,8 @@ nav {
 }
 
 #available-appointments {
-  display: grid;
-  grid-template-columns: 1fr 1fr 1fr 1fr 1fr;
+  display: flex;
+  /*grid-template-columns: 1fr 1fr 1fr 1fr 1fr;*/
 }
 
 .appointment-day {

@@ -677,7 +677,7 @@ app.get("/admins/appointments/search", (req, res) =>{
 app.get("/admins/appointments/details", (req, res) =>{
     res.sendFile(path.join(__dirname, "pages/admins/admins-appointments-details.html"));
 });
-app.get("/admins/admins/details/search", (req, res) =>{
+app.get("/admins/appointments/details/search", (req, res) =>{
     const appointmentID = req.query.ID
     const appointment = appointmentModel.findAppointmentsById(appointmentID);
     const currentStatus = appointmentStatusModel.findCurrentStatusByAppointmentId(appointmentID);
