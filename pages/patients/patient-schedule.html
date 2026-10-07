@@ -120,7 +120,7 @@
           //Generate HTML of appointment cards within a date
           const appointmentCards = appointmentsByDate[date].map(appointment => {
             const [date, time] = appointment.datetime.split(' ');
-            if(appointment.currentStatus != "Available"){
+            if(appointment.currentStatus != "Available" || appointment.datetime < getDate()){
               return `
                 <section class="booking-card">
                   <div>
@@ -148,7 +148,7 @@
 
           //Render all HTML by date
           return `
-            <div class="appointment-day">
+            <div class="appointment-day${weekday=="Monday"?' monday':''}">
               <h3>${weekday}, ${date}</h3>
               ${appointmentCards}
             </div>
@@ -186,6 +186,19 @@
       //Set ID
       bookingID.value = appointmentID;
     }
+
+    function getDate(){
+    //get current date in format (yyyy-mm-dd hh:mm:ss)
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    const seconds = String(now.getSeconds()).padStart(2, '0');
+    const formattedDate = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+    return formattedDate;
+}
 
     getAvailableAppointments();
     

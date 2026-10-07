@@ -204,7 +204,11 @@ nav {
 
 .appointment-day {
   margin: 5px;
-  
+  width: 100px;
+}
+.appointment-day.monday {
+  background-color: #e4ebf9;
+  padding: 0px 5px;
 }
 
 .booking-card {
@@ -212,6 +216,10 @@ nav {
   padding: 5px;
   margin: 5px;
   justify-self: center;
+}
+
+.booking-card button {
+  height: 2.5rem;
 }
 
 /*STAFF APPOINTMENT DETAILS*/
